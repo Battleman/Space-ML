@@ -66,3 +66,140 @@ def ridge_regression(y, tx, lambda_):
     w = np.linalg.solve(a, b)
     loss = compute_cose(y, tx, w)
     return w, loss
+
+################################################
+# Logistic Regression
+################################################
+
+def sigmoid(t):
+    """applies the sigmoid function to t."""
+    return np.exp(t)/(np.exp(t)+1)
+
+def log_likelihood_loss(y, tx, w):
+    """computes the cost by negative log likelihood."""
+    p_1=sigmoid(tx@w)
+    p_0=np.log(1-p_1)
+    p_1=np.log(p_1)
+    return -np.sum((y==1)*p_1+(y==0)*p_0)
+
+def log_likelihood_gradient(y, tx, w):
+    """computes the gradient of the log likelihood."""
+    return tx.T@(sigmoid(tx@w)-y)
+
+"""
+def random_batches(y, tx, batch_size, num_batches):
+    """
+    #generates num_batches random batches of size batch_size
+    """
+    data_size = len(y)
+    
+    for batch_num in range(num_batches):
+        shuffle_indices = np.random.permutation(np.arange(data_size))
+        shuffled_y = y[shuffle_indices]
+        shuffled_tx = tx[shuffle_indices]
+        yield shuffled_y[:batch_size],shuffled_tx[:batch_size]
+        
+"""
+    
+def random_batches(y, tx, batch_size, num_batches):
+    """
+    generates num_batches random batches of size batch_size
+    """
+    data_size = len(y)
+    shuffle_indices = np.random.permutation(np.arange(data_size))
+    shuffled_y = y[shuffle_indices]
+    shuffled_tx = tx[shuffle_indices]
+    
+    for batch_num in range(min(num_batches,(int)(data_size/batch_size)+1)):
+        start_index = batch_num * batch_size
+        end_index = min((batch_num + 1) * batch_size, data_size)
+        if start_index != end_index:
+            yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
+
+"""
+def random_batches(y, tx, batch_size, num_batches):
+    """
+    #generates num_batches random batches of size batch_size
+    """
+    data_size = len(y)
+    batches=[]
+    batch_cuts=(int)(data_size/batch_size)+1
+    
+    while True:
+        shuffle_indices = np.random.permutation(np.arange(data_size))
+        shuffled_y = y[shuffle_indices]
+        shuffled_tx = tx[shuffle_indices]
+        for batch_cut in range(batch_cuts):
+            start_index = batch_cut * batch_size
+            end_index = min((batch_cut + 1) * batch_size, data_size)
+            if start_index != end_index:
+                batches.append([shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]])
+            if len(batches)==num_batches:
+                return batches
+"""
+    
+def logistic_regression_GD(y, tx, initial_w, max_iter, gamma):
+    """
+    applies logistic regression using gradient descent to optimize w
+    """
+    # initializing the weights
+    w=initial_w
+    
+    # logistic regression
+    for iter in range(max_iter):
+        # updating the weights
+        grad=log_likelihood_gradient(y, tx, w)
+        w-=gamma*grad
+        
+    retrun w, log_likelihood_loss(y, tx, w)
+    
+def logistic_regression_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
+    """
+    applies logistic regression using stochastic gradient descent to optimize w
+    """
+    # initializing the weights
+    w=initial_w
+    
+    # logistic regression
+    for yb, txb in random_batches(y, tx, batch_size, max_iters):
+        # updating the weights
+        grad=log_likelihood_gradient(yb, txb, w)
+        w-=gamma*grad
+        
+    return w, log_likelihood_loss(y, tx, w)
+
+##################################################
+# Regularized Logistic Regression
+##################################################
+
+def reg_logistic_regression_GD(y, tx, lambda_, initial_w, max_iters, gamma):
+    """
+    applies regularized logistic regression using gradient descent to optimize w
+    """
+    # initializing the weights
+    w=initial_w
+    
+    # regularized logistic regression
+    for iter in range(max_iters):
+        # updating the weights
+        grad= log_likelihood_gradient(y, tx, w)+2*lambda_*w
+        w-=gamma*grad
+        
+    loss= log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
+    return w, loss
+
+def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, batch_size, max_iters, gamma):
+    """
+    applies regularized logistic regression using stochastic gradient descent to optimize w
+    """
+    # initializing the weights
+    w=initial_w
+    
+    # regularized logistic regression
+    for yb, txb in random_batches(y, tx, batch_size, max_iters):
+        # updating the weights
+        grad=log_likelihood_gradient(yb, txb, w)+2*lambda_*w
+        w-=gamma*grad
+        
+    loss= log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
+    return w, loss
