@@ -203,3 +203,26 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, batch_size, max_iters
         
     loss= log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
     return w, loss
+    
+def data_split(y, tx, train_ratio,valid_ratio):
+    """
+    splits data into training,validation and test sets based on the ratios
+    """
+    # initializing the seed
+    np.random.seed(1)
+    
+    indices = np.arange(len(y))
+    np.random.shuffle(indices)
+    
+    # Calculate the indices of the training,validation and test sets
+    split = (np.array([train_ratio, valid_ratio]) * len(y)).astype(int).cumsum()
+    train_index, valid_index, test_index = np.split(indices,split)
+    
+    train_x = tx[train_index]
+    train_y = y[train_index]
+    validation_x = tx[valid_index]
+    validation_y = y[valid_index]
+    test_x = tx[test_index]
+    test_y = y[test_index]
+    
+    return train_x,train_y,validation_x,validation_y,test_x,test_y
