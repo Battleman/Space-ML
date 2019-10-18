@@ -204,25 +204,36 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, batch_size, max_iters
     loss= log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
     return w, loss
     
-def data_split(y, tx, train_ratio,valid_ratio):
+def build_k_indices(y, k_fold, seed=1):
     """
-    splits data into training,validation and test sets based on the ratios
+    splits indices of data into 'k_folds' folds.
     """
-    # initializing the seed
-    np.random.seed(1)
+    num_row = len(y)
+    # floor division
+    interval = num_row // k_fold
     
-    indices = np.arange(len(y))
-    np.random.shuffle(indices)
+    np.random.seed(seed)
     
-    # Calculate the indices of the training,validation and test sets
-    split = (np.array([train_ratio, valid_ratio]) * len(y)).astype(int).cumsum()
-    train_index, valid_index, test_index = np.split(indices,split)
+    # Build k_folds indices
+    indices = np.random.permutation(num_row)
+    k_indices = [indices[k * interval:(k + 1) * interval] for k in range(k_fold)]
     
-    train_x = tx[train_index]
-    train_y = y[train_index]
-    validation_x = tx[valid_index]
-    validation_y = y[valid_index]
-    test_x = tx[test_index]
-    test_y = y[test_index]
+    return np.array(k_indices)
+def split_train_test(y, tx, k_indices, k):
+    """
+    splits data into train and test subsets given the fold indices 'k_indices' and the fold index 'k'.
+    """
+    # use 1 split for test
+    test_indice = k_indices[k]
     
-    return train_x,train_y,validation_x,validation_y,test_x,test_y
+    # use k-1 split for train
+    train_splits = [i for i in range(k_indices.shape[0]) if i is not k]
+    train_ind = k_indices[train_splits].reshape(-1)   
+        
+    x_train = tx[train_ind]
+    x_test = tx[test_indice]
+    y_train = y[train_ind]
+    y_test = y[test_indice]
+    
+    return x_train,x_test,y_train,y_test
+        
