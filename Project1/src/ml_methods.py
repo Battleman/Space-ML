@@ -1,3 +1,4 @@
+import numpy as np
 def compute_cost(y, tx, w, method="mae"):
     def calculate_mse(e):
         return np.mean(e**2)/2
@@ -5,9 +6,9 @@ def compute_cost(y, tx, w, method="mae"):
         return np.mean(np.abs(e))
     
     if method.lower() == "mae":
-        cost_f = compute_mae
+        cost_f = calculate_mae
     elif method.lower() == "mse":
-        cost_f = compute_mse
+        cost_f = calculate_mse
     else:
         return NotImplementedError
     e = y - tx.dot(w)
@@ -90,7 +91,7 @@ def log_likelihood_gradient(y, tx, w):
 def random_batches(y, tx, batch_size, num_batches):
     """
     #generates num_batches random batches of size batch_size
-    """
+"""
     data_size = len(y)
     
     for batch_num in range(num_batches):
@@ -120,7 +121,7 @@ def random_batches(y, tx, batch_size, num_batches):
 def random_batches(y, tx, batch_size, num_batches):
     """
     #generates num_batches random batches of size batch_size
-    """
+"""
     data_size = len(y)
     batches=[]
     batch_cuts=(int)(data_size/batch_size)+1
@@ -151,7 +152,7 @@ def logistic_regression_GD(y, tx, initial_w, max_iter, gamma):
         grad=log_likelihood_gradient(y, tx, w)
         w-=gamma*grad
         
-    retrun w, log_likelihood_loss(y, tx, w)
+    return w, log_likelihood_loss(y, tx, w)
     
 def logistic_regression_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
     """
