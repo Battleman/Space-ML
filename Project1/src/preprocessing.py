@@ -18,32 +18,23 @@ def outlier_cleanup(x):
     com_matrix=np.repeat(com_vector[np.newaxis,:],np.array([x.shape[0]]),axis=0)
     return np.where(x!=undef_value,x,com_matrix)
 
-def preprocessing(y, x):
+def preprocessing(x):
     """Take current features and results, clean
     """
     #splitting the samples in function of the value of PRI_jet_num 
-    x_jet0=x[x[:,jet_ind]==0]
-    x_jet1=x[x[:,jet_ind]==1]
-    x_jet23=x[x[:,jet_ind]>1]
+    masks = [
+        x[:,jet_ind]==0,
+        x[:,jet_ind]==1,
+        x[:,jet_ind]>0
+    ]
     
-    #splitting the y values
-    y_jet0=y[x[:,jet_ind]==0]
-    y_jet1=y[x[:,jet_ind]==1]
-    y_jet23=y[x[:,jet_ind]>1]
+    split_cleaned = []
+    for m in masks:
+        subset = x[m]
+        subset = np.delete(subset, phi, 1)
+        subset = subset[:,np.var(subset,0) != 0]
+        subset = outlier_cleanup(subset)
+        split_cleaned.append(subset)
+
     
-    #removing all the non-relevant columns
-    x_jet0=np.delete(x_jet0,phi,1)
-    x_jet1=np.delete(x_jet1,phi,1)
-    x_jet23=np.delete(x_jet23,phi,1)
-    
-    #removing all -999 columns
-    x_jet0=x_jet0[:,np.var(x_jet0,0)!=0]
-    x_jet1=x_jet1[:,np.var(x_jet1,0)!=0]
-    x_jet23=x_jet23[:,np.var(x_jet23,0)!=0]
-    
-    #replacing the outliers by the most common value of their column
-    x_jet0=outlier_cleanup(x_jet0)
-    x_jet1=outlier_cleanup(x_jet1)
-    x_jet23=outlier_cleanup(x_jet23)
-    
-    return np.array([[y_jet0,x_jet0],[y_jet1,x_jet1],[y_jet23,x_jet23]])
+    return (split_cleaned, masks)
