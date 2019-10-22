@@ -232,18 +232,21 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, batch_size, max_iters
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
     return w, loss
 
+##################################################
+# Cross-Validation
+##################################################
 
-def build_k_indices(y, k_fold, seed=1):
+def build_k_indices(num_row, k_fold, seed=1):
     """
     splits indices of data into 'k_folds' folds.
     """
-    num_row = len(y)
-    # floor division
+    # setting the random seed
+    np.random.seed(seed)
+    
+    # interval computation
     interval = num_row // k_fold
 
-    np.random.seed(seed)
-
-    # Build k_folds indices
+    # build k_folds indices
     indices = np.random.permutation(num_row)
     k_indices = [indices[k * interval:(k + 1) * interval]
                  for k in range(k_fold)]
@@ -255,17 +258,17 @@ def split_train_test(y, tx, k_indices, k):
     """
     splits data into train and test subsets given the fold indices 'k_indices' and the fold index 'k'.
     """
-    # use 1 split for test
-    test_indice = k_indices[k]
+    # get the test split
+    test_ind = k_indices[k]
 
-    # use k-1 split for train
-    train_splits = [i for i in range(k_indices.shape[0]) if i is not k]
+    # get the k-1 train splits
+    train_splits = np.delete(k_indices,k,0)
     train_ind = k_indices[train_splits].reshape(-1)
 
     x_train = tx[train_ind]
-    x_test = tx[test_indice]
+    x_test = tx[test_ind]
     y_train = y[train_ind]
-    y_test = y[test_indice]
+    y_test = y[test_ind]
 
     return x_train, x_test, y_train, y_test
 
@@ -274,35 +277,39 @@ def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter=1000, gamm
     Runs cross validation, for every fold splits the data into test and train does feature expansion
     and trains with logistic_regression_GD, returns overall error.
     """
-
-    errors = np.zeros((num_folds, ))
+    # initializing useful variables
+    errors = np.zeros(num_folds)
+    initial_w = np.zeros(x_train.shape[1])
+    
+    # feature expansion
+    x_train_aug=augment(x_test, degree)
+    x_test_aug=augment(x_test, degree)
+    
+    # for each fold
     for k in range(num_folds):
         x_train, x_test, y_train, y_test = split_train_test(y, tx, k_indices, k)
-
-        # expand data with polynomial degree
-        x_train_aug = augment(x_train, degree)
-        x_test_aug = augment(x_test, degree)
-
-        initial_w = np.zeros(x_train_aug.shape[1])
         w, loss = reg_logistic_regression_GD(y_train, x_train_aug, lamda, initial_w, iter, gamma)
         errors[k] = compute_cost(y_test, x_test_aug, w, method="mse")
-
+    
+    # computing the average error
     avg_error = np.mean(errors)
     return avg_error
 
-def find_besthyperparameters_CrossValid(y, tx, num_folds, lamda, degree):
+def find_besthyperparameters_CrossValid(y, tx, num_folds, lamdas, degrees):
     """
     Finds the hyperparameters that give the lowest error for the cross-validation
     """
-
-    k_indices = build_k_indices(y, num_folds)
-
-    errors = np.zeros([lamda.shape[0], degree.shape[0]])
-    for i, lamd in enumerate(lamda):
-        for j, deg in enumerate(degree):
+    # initializing useful variables
+    k_indices = build_k_indices(len(y), num_folds)
+    errors = np.zeros([lamdas.shape[0], degrees.shape[0]])
+    
+    # for each hyperparameter
+    for i, lamd in enumerate(lamdas):
+        for j, deg in enumerate(degrees):
             errors[i, j] = cross_validation(y, tx, k_indices, num_folds,lamd,deg)
 
-    degree_best = degree[np.argmin(errors) % len(degree)]
-    lambda_best = lamda[np.argmin(errors) // len(degree)]
+    # evaluating which hyperparameters are the best
+    degree_best = degrees[np.argmin(errors) % len(degree)]
+    lambda_best = lamdas[np.argmin(errors) // len(degree)]
 
     return lambda_best, degree_best
