@@ -266,3 +266,41 @@ def split_train_test(y, tx, k_indices, k):
     y_test = y[test_indice]
 
     return x_train, x_test, y_train, y_test
+
+def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter=1000, gamma=1e-2):
+    """
+    Runs cross validation, for every fold splits the data into test and train does feature expansion
+    and trains with logistic_regression_GD, returns overall error.
+    """
+
+    errors = np.zeros((num_folds, ))
+    for k in range(num_folds):
+        x_train, x_test, y_train, y_test = split_train_test(y, tx, k_indices, k)
+
+        # expand data with polynomial degree
+        x_train_aug = augment(x_train, degree)
+        x_test_aug = augment(x_test, degree)
+
+        initial_w = np.zeros(x_train_aug.shape[1])
+        w, loss = reg_logistic_regression_GD(y_train, x_train_aug, lamda, initial_w, iter, gamma)
+        errors[k] = compute_cost(y_test, x_test_aug, w, method="mse")
+
+    avg_error = np.mean(errors)
+    return avg_error
+
+def find_besthyperparameters_CrossValid(y, tx, num_folds, lamda, degree):
+    """
+    Finds the hyperparameters that give the lowest error for the cross-validation
+    """
+
+    k_indices = build_k_indices(y, num_folds)
+
+    errors = np.zeros([lamda.shape[0], degree.shape[0]])
+    for i, lamd in enumerate(lamda):
+        for j, deg in enumerate(degree):
+            errors[i, j] = cross_validation(y, tx, k_indices, num_folds,lamd,deg)
+
+    degree_best = degree[np.argmin(errors) % len(degree)]
+    lambda_best = lamda[np.argmin(errors) // len(degree)]
+
+    return lambda_best, degree_best
