@@ -1,2 +1,3 @@
 .ipynb_checkpoints
 predictions.csv
+.mypy_cache
