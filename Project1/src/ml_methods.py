@@ -282,7 +282,7 @@ def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter=1000, gamm
     initial_w = np.zeros(x_train.shape[1])
     
     # feature expansion
-    x_train_aug=augment(x_test, degree)
+    x_train_aug=augment(x_train, degree)
     x_test_aug=augment(x_test, degree)
     
     # for each fold
