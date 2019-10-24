@@ -8,7 +8,7 @@ from features_engineering import augment
 
 def sigmoid(t):
     """applies the sigmoid function to t."""
-    return np.exp(t)/(np.exp(t)+1)
+    return np.where(t>10,0.99,np.exp(t)/(np.exp(t)+1))
 
 def random_batches(y, tx, num_batches):
     """generates num_batches random batches of size batch_size"""
@@ -24,12 +24,12 @@ def random_batches(y, tx, num_batches):
 
 def log_likelihood_loss(y, tx, w):
     """computes the cost by negative log likelihood."""
-    p_1 = sigmoid(tx.dot(w))
-    p_0 = np.log(1-p_1)
-    p_1 = np.log(p_1)
-    return -np.sum(p_1+(1-y)*p_0)
+    p_1=sigmoid(tx.dot(w))
+    p_0=np.log(1-p_1)
+    p_1=np.log(p_1)
+    return -np.sum((y==1)*p_1+(y==0)*p_0)
 
-def compute_cost(y, tx, w, method="mae"):
+def compute_cost(y, tx, w, method="mse"):
     """computes the cost by mse or mae"""
     err = y - tx.dot(w)
     if method.lower() == "mae":
@@ -44,7 +44,7 @@ def compute_cost(y, tx, w, method="mae"):
 # Gradient Functions
 ######################################
 
-def compute_gradient(y, tx, w, method="mae"):
+def compute_gradient(y, tx, w, method="mse"):
     """computes the gradient of the mse or mae"""
     err = y - tx.dot(w)
     if method.lower() == "mse":
@@ -52,7 +52,7 @@ def compute_gradient(y, tx, w, method="mae"):
     elif method.lower() == "mae":
         sign=(err<0)*(-1)+(err>=0)*1
         sign=np.reshape(sign,(-1,1))
-        grad=np.sum(tx*sign, axis=0)*(-1)/len(err)
+        grad=(np.sum(tx*sign, axis=0)*(-1)/len(err))[:,np.newaxis]
     else: 
         return NotImplementedError
     return grad
@@ -69,10 +69,8 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
     """applies least squares using gradient descent to optimize w"""
     # Define parameters to store w and loss
     w = initial_w
-    loss = compute_loss(y, tx, w)
-
     for n_iter in range(max_iters):
-        # compute loss, gradient
+        # compute gradient
         grad = compute_gradient(y, tx, w)
         # gradient w by descent update
         w -= gamma * grad
@@ -87,7 +85,7 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     for n_iter in range(max_iters):
         for yb, txb in random_batches(y, tx, max_iters):
             # compute 1 SGD and the loss
-            grad = compute_gradient(yb, txb)
+            grad = compute_gradient(np.array([yb]), txb[np.newaxis,:], w)
             # update w
             w -= gamma * grad
 
@@ -137,7 +135,7 @@ def logistic_regression_SGD(y, tx, initial_w, max_iters, gamma):
     # logistic regression
     for yb, txb in random_batches(y, tx, max_iters):
         # updating the weights
-        grad = log_likelihood_gradient(yb, txb, w)
+        grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)
         w -= gamma*grad
     return w, log_likelihood_loss(y, tx, w)
 
@@ -155,8 +153,9 @@ def reg_logistic_regression_GD(y, tx, lambda_, initial_w, max_iters, gamma):
     for iter in range(max_iters):
         # updating the weights
         grad = log_likelihood_gradient(y, tx, w)+2*lambda_*w
+        if iter % 100 == 0:
+            print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
         w -= gamma*grad
-
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
 
@@ -167,10 +166,12 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, max_iters, gamma):
     w = initial_w
     
     # regularized logistic regression
-    for yb, txb in random_batches(y, tx, max_iters):
+    for it, (yb, txb) in enumerate(random_batches(y, tx, max_iters)):
         # updating the weights
         grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)+2*lambda_*w
         w -= gamma*grad
+        if it % 10000 == 0:
+            print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
 
@@ -265,14 +266,14 @@ def find_besthyperparameters_CrossValid(y, tx, num_folds, lamdas, degrees, iter_
 # Prediction Generator
 ######################################
 
-def predict_labels(weights, data):
+def predict_labels(tx,w,logistic):
     """generates class predictions given weights, and a test data matrix"""
-    y_pred = np.dot(data, weights)
+    y_pred= 2*sigmoid(tx.dot(w))-1 if logistic else tx.dot(w)
     y_pred[np.where(y_pred <= 0)] = -1
     y_pred[np.where(y_pred > 0)] = 1
     return y_pred
 
-def predictions(y, tx, px, mask_t, mask_p, reg_f, len_pred, degree, lambda_, max_iters, gamma):
+def predictions(y, tx, px, mask_t, mask_p, reg_f, len_pred, degree, lambda_, max_iters, gamma, logistic=False):
     """generates predictions using the regression function reg_f (trained on y,tx) and the inputs px"""
     y_pred = np.zeros((len_pred,1))
     for x_train, mask_train, x_test, mask_test in zip(tx, mask_t, px, mask_p):
@@ -288,7 +289,7 @@ def predictions(y, tx, px, mask_t, mask_p, reg_f, len_pred, degree, lambda_, max
         x_test_aug = augment(x_test, degree)
         print("Augmented test")
         del x_test
-        y_pred[mask_test] = predict_labels(w, x_test_aug)
+        y_pred[mask_test] = predict_labels(x_test_aug,w,logistic)
         print("Computed predictions")
         del x_test_aug
     return y_pred
