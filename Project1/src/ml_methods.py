@@ -16,7 +16,7 @@ def random_batches(y, tx, num_batches):
     shuffle_indices = np.random.permutation(np.mod(np.arange(num_batches),data_size))
     shuffled_y = y[shuffle_indices]
     shuffled_tx = tx[shuffle_indices]
-    reuturn zip(shuffled_y,shuffled_tx)
+    return zip(shuffled_y,shuffled_tx)
 
 ######################################
 # Loss Functions
@@ -140,7 +140,6 @@ def logistic_regression_SGD(y, tx, initial_w, max_iters, gamma):
         # updating the weights
         grad = log_likelihood_gradient(yb, txb, w)
         w -= gamma*grad
-
     return w, log_likelihood_loss(y, tx, w)
 
 ##################################################
@@ -167,13 +166,13 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, max_iters, gamma):
     """applies regularized logistic regression using stochastic gradient descent to optimize w"""
     # initializing the weights
     w = initial_w
-
+    
     # regularized logistic regression
     for yb, txb in random_batches(y, tx, max_iters):
         # updating the weights
-        grad = log_likelihood_gradient(yb, txb, w)+2*lambda_*w
+        grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)+2*lambda_*w
         w -= gamma*grad
-
+    print(w[:10],sigmoid(tx@w)[:10],(tx@w)[:10],tx[:10])
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
     return w, loss
 
@@ -213,7 +212,7 @@ def split_train_test(y, tx, k_indices, k):
 
     return x_train, x_test, y_train, y_test
 
-def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter_=1000, gamma=1e-2, reg_f, loss_f):
+def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter_, gamma, reg_f, loss_f):
     """
     runs cross validation, for every fold splits the data into test and train does feature expansion
     and trains with reg_f, returns overall error.
@@ -229,14 +228,14 @@ def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter_=1000, gam
     # for each fold
     for k in range(num_folds):
         x_train, x_test, y_train, y_test = split_train_test(y, tx, k_indices, k)
-        w = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
-        errors[k] = loss_f(y_test, x_test_aug, w)
+        w,err = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
+        errors[k] = err
     
     # computing the average error
     avg_error = np.mean(errors)
     return avg_error
 
-def cross_validation_SGD(y, tx, k_indices, num_folds, lamda, degree, iter_=1000, gamma=1e-2, reg_f, loss_f):
+def cross_validation_SGD(y, tx, k_indices, num_folds, lamda, degree, iter_, gamma, reg_f, loss_f):
     """runs cross validation: does feature expansion and trains with reg_f, returns full set error."""
     # initializing useful variables
     initial_w = np.zeros(x_train.shape[1])
@@ -245,12 +244,8 @@ def cross_validation_SGD(y, tx, k_indices, num_folds, lamda, degree, iter_=1000,
     x_train_aug=augment(x_train, degree)
     x_test_aug=augment(x_test, degree)
     
-    w = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
-    err= loss_f(y_test, x_test_aug, w)
-    
-    # computing the average error
-    avg_error = np.mean(errors)
-    return avg_error
+    w,err = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
+    return err
 
 def find_besthyperparameters_CrossValid(y, tx, num_folds, lamdas, degrees, iter_, gamma, cross_val_f, reg_f, loss_f):
     """finds the hyperparameters that give the lowest error for the cross-validation"""
@@ -267,3 +262,37 @@ def find_besthyperparameters_CrossValid(y, tx, num_folds, lamdas, degrees, iter_
     lambda_best = lamdas[np.argmin(errors) // len(degree)]
 
     return lambda_best, degree_best
+
+######################################
+# Prediction Generator
+######################################
+
+def predict_labels(weights, data):
+    """generates class predictions given weights, and a test data matrix"""
+    y_pred = np.dot(data, weights)
+    y_pred[np.where(y_pred <= 0)] = -1
+    y_pred[np.where(y_pred > 0)] = 1
+    
+    return y_pred
+
+def predictions(y, tx, px, mask_t, mask_p, reg_f, len_pred, degree, lambda_, max_iters, gamma):
+    """generates predictions using the regression function reg_f (trained on y,tx) and the inputs px"""
+    y_pred = np.zeros(len_pred)
+    for x_train, mask_train, x_test, mask_test in zip(tx, mask_t, px, mask_p):
+        print("#######New subset#######")
+        y_correspond = y[mask_train]
+        x_train_aug = augment(x_train, degree)
+        print("Augmented train")
+        del x_train
+        initial_w= np.zeros((x_train_aug.shape[1], 1))
+        w,_ = reg_f(y_correspond, x_train_aug, lambda_, initial_w, max_iters, gamma)
+        print("Computed weights")
+        del x_train_aug
+        x_test_aug = augment(x_test, degree)
+        print("Augmented test")
+        del x_test
+        y_pred[mask_test] = predict_labels(w, x_test_aug)
+        print("Computed predictions")
+        del x_test_aug
+        print(y_pred)
+    return y_pred
