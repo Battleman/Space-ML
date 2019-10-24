@@ -24,10 +24,10 @@ def random_batches(y, tx, num_batches):
 
 def log_likelihood_loss(y, tx, w):
     """computes the cost by negative log likelihood."""
-    p_1 = sigmoid(tx@w)
+    p_1 = sigmoid(tx.dot(w))
     p_0 = np.log(1-p_1)
     p_1 = np.log(p_1)
-    return -np.sum((y == 1)*p_1+(y == 0)*p_0)
+    return -np.sum(p_1+(1-y)*p_0)
 
 def compute_cost(y, tx, w, method="mae"):
     """computes the cost by mse or mae"""
@@ -59,7 +59,7 @@ def compute_gradient(y, tx, w, method="mae"):
 
 def log_likelihood_gradient(y, tx, w):
     """computes the gradient of the log likelihood."""
-    return tx.T@(sigmoid(tx@w)-y)
+    return tx.T.dot(sigmoid(tx.dot(w))-y)
 
 ######################################
 # Least Squares
@@ -106,7 +106,6 @@ def ridge_regression(y, tx, lambda_):
     lambdaI = (lambda_ * 2 * len(y)) * np.eye(tx.shape[1])
     a = (tx.T.dot(tx)) + lambdaI
     b = tx.T.dot(y)
-
     w = np.linalg.solve(a, b)
     loss = compute_cost(y, tx, w)
     return w, loss
@@ -158,7 +157,7 @@ def reg_logistic_regression_GD(y, tx, lambda_, initial_w, max_iters, gamma):
         grad = log_likelihood_gradient(y, tx, w)+2*lambda_*w
         w -= gamma*grad
 
-    loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
+    loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
 
 
@@ -172,8 +171,7 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, max_iters, gamma):
         # updating the weights
         grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)+2*lambda_*w
         w -= gamma*grad
-    print(w[:10],sigmoid(tx@w)[:10],(tx@w)[:10],tx[:10])
-    loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
+    loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
 
 ##################################################
@@ -272,12 +270,11 @@ def predict_labels(weights, data):
     y_pred = np.dot(data, weights)
     y_pred[np.where(y_pred <= 0)] = -1
     y_pred[np.where(y_pred > 0)] = 1
-    
     return y_pred
 
 def predictions(y, tx, px, mask_t, mask_p, reg_f, len_pred, degree, lambda_, max_iters, gamma):
     """generates predictions using the regression function reg_f (trained on y,tx) and the inputs px"""
-    y_pred = np.zeros(len_pred)
+    y_pred = np.zeros((len_pred,1))
     for x_train, mask_train, x_test, mask_test in zip(tx, mask_t, px, mask_p):
         print("#######New subset#######")
         y_correspond = y[mask_train]
@@ -294,5 +291,4 @@ def predictions(y, tx, px, mask_t, mask_p, reg_f, len_pred, degree, lambda_, max
         y_pred[mask_test] = predict_labels(w, x_test_aug)
         print("Computed predictions")
         del x_test_aug
-        print(y_pred)
     return y_pred
