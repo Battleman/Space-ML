@@ -8,8 +8,9 @@ from features_engineering import augment
 
 def sigmoid(t):
     """applies the sigmoid function to t."""
-    return np.where(t>10,0.99,np.exp(t)/(np.exp(t)+1))
-
+    t[t>=20]=20
+    t[t<=-20]=-20
+    return np.exp(t)/(np.exp(t)+1)
 def random_batches(y, tx, num_batches):
     """generates num_batches random batches of size batch_size"""
     data_size = len(y)
