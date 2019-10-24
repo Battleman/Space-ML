@@ -213,7 +213,7 @@ def split_train_test(y, tx, k_indices, k):
 
     return x_train, x_test, y_train, y_test
 
-def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter=1000, gamma=1e-2, reg_f, loss_f):
+def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter_=1000, gamma=1e-2, reg_f, loss_f):
     """
     runs cross validation, for every fold splits the data into test and train does feature expansion
     and trains with reg_f, returns overall error.
@@ -229,14 +229,14 @@ def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter=1000, gamm
     # for each fold
     for k in range(num_folds):
         x_train, x_test, y_train, y_test = split_train_test(y, tx, k_indices, k)
-        w = reg_f(y_train, x_train_aug, lamda, initial_w, iter, gamma)
+        w = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
         errors[k] = loss_f(y_test, x_test_aug, w)
     
     # computing the average error
     avg_error = np.mean(errors)
     return avg_error
 
-def cross_validation_SGD(y, tx, k_indices, num_folds, lamda, degree, iter=1000, gamma=1e-2, reg_f, loss_f):
+def cross_validation_SGD(y, tx, k_indices, num_folds, lamda, degree, iter_=1000, gamma=1e-2, reg_f, loss_f):
     """runs cross validation: does feature expansion and trains with reg_f, returns full set error."""
     # initializing useful variables
     initial_w = np.zeros(x_train.shape[1])
@@ -245,23 +245,22 @@ def cross_validation_SGD(y, tx, k_indices, num_folds, lamda, degree, iter=1000, 
     x_train_aug=augment(x_train, degree)
     x_test_aug=augment(x_test, degree)
     
-    w = reg_f(y_train, x_train_aug, lamda, initial_w, iter, gamma)
+    w = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
     err= loss_f(y_test, x_test_aug, w)
     
     # computing the average error
     avg_error = np.mean(errors)
     return avg_error
 
-def find_besthyperparameters_CrossValid(y, tx, num_folds, lamdas, degrees, cross_val_f, reg_f, loss_f):
+def find_besthyperparameters_CrossValid(y, tx, num_folds, lamdas, degrees, iter_, gamma, cross_val_f, reg_f, loss_f):
     """finds the hyperparameters that give the lowest error for the cross-validation"""
     # initializing useful variables
     k_indices = build_k_indices(len(y), num_folds)
     errors = np.zeros([lamdas.shape[0], degrees.shape[0]])
-    
     # for each hyperparameter
     for i, lamd in enumerate(lamdas):
         for j, deg in enumerate(degrees):
-            errors[i, j] = cross_val_f(y, tx, k_indices, num_folds,lamd,deg,reg_f,loss_f)
+            errors[i, j] = cross_val_f(y, tx, k_indices, num_folds, lamd, deg, iter_, gamma, reg_f, loss_f)
 
     # evaluating which hyperparameters are the best
     degree_best = degrees[np.argmin(errors) % len(degree)]
