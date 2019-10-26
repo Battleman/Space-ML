@@ -18,6 +18,7 @@ COMBINED_DEGREES = [3, 3, 2]
 SIMPLE_DEGREES = [3, 4, 4]
 TAN_HYP_DEGREES = [4, 4, 4]
 INVERSE_LOG_DEGREES = [4, 4, 4]
+
 #########
 # File paths
 #########
@@ -30,6 +31,7 @@ OUTPUT_PATH = '../predictions.csv'
 #########
 print("Loading CSV")
 y, tX_train, _ = load_csv_data(DATA_TRAIN_PATH)
+
 _, tX_test, ids_test = load_csv_data(DATA_TEST_PATH)
 
 #########
@@ -38,6 +40,7 @@ _, tX_test, ids_test = load_csv_data(DATA_TEST_PATH)
 print("Preprocessing")
 (XS_TRAIN, MASKS_TRAIN) = preprocessing(tX_train)
 (XS_TEST, MASKS_TEST) = preprocessing(tX_test)
+
 
 # placeholder for submission
 y_submission = np.zeros(tX_test.shape[0])
@@ -51,6 +54,7 @@ for i in range(NUM_SETS):
     print("Augmenting training set")
     x_train_aug_fname = ("cache/x_train_augmented_jet{}_{}dim.np"
                          .format(i, COMBINED_DEGREES[i]))
+
     try:
         with open(x_train_aug_fname, "rb") as f:
             print("Augmented training set cached found")
@@ -78,8 +82,9 @@ for i in range(NUM_SETS):
 
     # features engineering test set
     print("Augmenting testing set")
-    x_test_aug_fname = "cache/x_test_augmented_jet{}_{}dim.np".format(
+      x_test_aug_fname = "cache/x_test_augmented_jet{}_{}dim.np".format(
         i, COMBINED_DEGREES[i])
+
     try:
         with open(x_test_aug_fname, "rb") as f:
             x_test_aug = np.load(f)
@@ -99,6 +104,7 @@ for i in range(NUM_SETS):
     y_submission[MASKS_TEST[i]] = predict_labels(w, x_test_aug)
     del x_test_aug
     del w
+
 # all predictions completed, create CSV
 print("Creating submission")
 create_csv_submission(ids_test, y_submission, OUTPUT_PATH)
