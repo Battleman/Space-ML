@@ -1,3 +1,4 @@
 .ipynb_checkpoints
-predictions.csv
 .mypy_cache
+.vscode
+predictions.csv
