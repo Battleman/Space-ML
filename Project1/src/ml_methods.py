@@ -74,6 +74,8 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         # compute gradient
         grad = compute_gradient(y, tx, w)
         # gradient w by descent update
+        if n_iter % 100 == 0:
+            print(compute_cost(y, tx, w))
         w -= gamma * grad
 
     return w, compute_cost(y, tx, w)
