@@ -85,13 +85,13 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     # Define parameters to store w and loss
     w = initial_w
     loss = compute_gradient(y, tx, initial_w)
-    for n_iter in range(max_iters):
-        for yb, txb in random_batches(y, tx, max_iters):
+    for it,(yb, txb) in enumerate(random_batches(y, tx, max_iters)):
             # compute 1 SGD and the loss
             grad = compute_gradient(np.array([yb]), txb[np.newaxis,:], w)
             # update w
             w -= gamma * grad
-
+            if it % 10000 == 0:
+                print(compute_cost(y, tx, w))
     return w, compute_cost(y, tx, w)
 
 def least_squares(y, tx):
@@ -126,7 +126,8 @@ def logistic_regression_GD(y, tx, initial_w, max_iter, gamma):
         # updating the weights
         grad = log_likelihood_gradient(y, tx, w)
         w -= gamma*grad
-
+        if iter % 100 == 0:
+            print(log_likelihood_loss(y, tx, w))
     return w, log_likelihood_loss(y, tx, w)
 
 
@@ -136,10 +137,12 @@ def logistic_regression_SGD(y, tx, initial_w, max_iters, gamma):
     w = initial_w
 
     # logistic regression
-    for yb, txb in random_batches(y, tx, max_iters):
+    for it,(yb, txb) in enumerate(random_batches(y, tx, max_iters)):
         # updating the weights
         grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)
         w -= gamma*grad
+        if it % 10000 == 0:
+            print(log_likelihood_loss(y, tx, w))
     return w, log_likelihood_loss(y, tx, w)
 
 ##################################################
