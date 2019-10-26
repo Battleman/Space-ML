@@ -1,84 +1,112 @@
 import numpy as np
 
+from features_engineering import augment
 
-def compute_cost(y, tx, w, method="mae"):
-    def calculate_mse(e):
-        return np.mean(e**2)/2
+######################################
+# Helper Functions
+######################################
 
-    def calculate_mae(e):
-        return np.mean(np.abs(e))
+def sigmoid(t):
+    """applies the sigmoid function to t."""
+    t[t>=20]=20
+    t[t<=-20]=-20
+    return np.exp(t)/(np.exp(t)+1)
+def random_batches(y, tx, num_batches):
+    """generates num_batches random batches of size batch_size"""
+    data_size = len(y)
+    shuffle_indices = np.random.permutation(np.mod(np.arange(num_batches),data_size))
+    shuffled_y = y[shuffle_indices]
+    shuffled_tx = tx[shuffle_indices]
+    return zip(shuffled_y,shuffled_tx)
 
+######################################
+# Loss Functions
+######################################
+
+def log_likelihood_loss(y, tx, w):
+    """computes the cost by negative log likelihood."""
+    p_1=sigmoid(tx.dot(w))
+    p_0=np.log(1-p_1)
+    p_1=np.log(p_1)
+    return -np.sum((y==1)*p_1+(y==0)*p_0)
+
+def compute_cost(y, tx, w, method="mse"):
+    """computes the cost by mse or mae"""
+    err = y - tx.dot(w)
     if method.lower() == "mae":
-        cost_f = calculate_mae
+        cost_f = np.mean(np.abs(err))
     elif method.lower() == "mse":
-        cost_f = calculate_mse
+        cost_f = np.mean(err**2)/2
     else:
         return NotImplementedError
-    e = y - tx.dot(w)
-    return cost_f(e)
+    return cost_f
 
+######################################
+# Gradient Functions
+######################################
 
-def compute_gradient(y, tx, w):
+def compute_gradient(y, tx, w, method="mse"):
+    """computes the gradient of the mse or mae"""
     err = y - tx.dot(w)
-    grad = -tx.T.dot(err) / len(err)
-    return grad, err
+    if method.lower() == "mse":
+        grad = -tx.T.dot(err) / len(err)
+    elif method.lower() == "mae":
+        sign=(err<0)*(-1)+(err>=0)*1
+        sign=np.reshape(sign,(-1,1))
+        grad=(np.sum(tx*sign, axis=0)*(-1)/len(err))[:,np.newaxis]
+    else: 
+        return NotImplementedError
+    return grad
 
+def log_likelihood_gradient(y, tx, w):
+    """computes the gradient of the log likelihood."""
+    return tx.T.dot(sigmoid(tx.dot(w))-y)
+
+######################################
+# Least Squares
+######################################
 
 def least_squares_GD(y, tx, initial_w, max_iters, gamma):
+    """applies least squares using gradient descent to optimize w"""
     # Define parameters to store w and loss
     w = initial_w
-    loss = compute_loss(y, tx, w)
-
     for n_iter in range(max_iters):
-        # compute loss, gradient
-        grad, e = compute_gradient(y, tx, w, fn="mse")
-        loss = calculate_cost(e)
-
+        # compute gradient
+        grad = compute_gradient(y, tx, w)
         # gradient w by descent update
+        if n_iter % 100 == 0:
+            print(compute_cost(y, tx, w))
         w -= gamma * grad
 
-    return w, loss
-
+    return w, compute_cost(y, tx, w)
 
 def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
+    """applies least squares using stochastic gradient descent to optimize w"""
     # Define parameters to store w and loss
     w = initial_w
     loss = compute_gradient(y, tx, initial_w)
-    for n_iter in range(max_iters):
-        for y_batch, tx_batch in batch_iter(y, tx, batch_size=1, num_batches=1):
+    for it,(yb, txb) in enumerate(random_batches(y, tx, max_iters)):
             # compute 1 SGD and the loss
-            grad, e = compute_gradient(y_batch, tx_batch, w)
-            loss = calculate_cost(e)
-
+            grad = compute_gradient(np.array([yb]), txb[np.newaxis,:], w)
             # update w
             w -= gamma * grad
-
-    return w, loss
-
+            if it % 10000 == 0:
+                print(compute_cost(y, tx, w))
+    return w, compute_cost(y, tx, w)
 
 def least_squares(y, tx):
+    """applies pure least squares to optimize w"""
     a = tx.T.dot(tx)
     b = tx.T.dot(y)
     w = np.linalg.solve(a, b)
     loss = compute_cost(y, tx, w)
     return w, loss
 
-
 def ridge_regression(y, tx, lambda_):
-    """Ridge regression, using least squares
-
-    Arguments:
-        y {ndarray} -- Labels
-        tx {ndarray} -- features
-        lambda_ {float} -- Complexity cost
-
-    Returns:
-        (ndarray, float) -- Optimal weights with corresponding loss
-    """
+    """applies ridge regression to optimize w"""
     lambdaI = (lambda_ * 2 * len(y)) * np.eye(tx.shape[1])
     a = (tx.T.dot(tx)) + lambdaI
     b = tx.T.dot(y)
-
     w = np.linalg.solve(a, b)
     loss = compute_cost(y, tx, w)
     return w, loss
@@ -88,83 +116,8 @@ def ridge_regression(y, tx, lambda_):
 ################################################
 
 
-def sigmoid(t):
-    """applies the sigmoid function to t."""
-    return np.exp(t)/(np.exp(t)+1)
-
-
-def log_likelihood_loss(y, tx, w):
-    """computes the cost by negative log likelihood."""
-    p_1 = sigmoid(tx@w)
-    p_0 = np.log(1-p_1)
-    p_1 = np.log(p_1)
-    return -np.sum((y == 1)*p_1+(y == 0)*p_0)
-
-
-def log_likelihood_gradient(y, tx, w):
-    """computes the gradient of the log likelihood."""
-    return tx.T@(sigmoid(tx@w)-y)
-
-
-"""
-def random_batches(y, tx, batch_size, num_batches):
-    """
-# generates num_batches random batches of size batch_size
-"""
-    data_size = len(y)
-
-    for batch_num in range(num_batches):
-        shuffle_indices = np.random.permutation(np.arange(data_size))
-        shuffled_y = y[shuffle_indices]
-        shuffled_tx = tx[shuffle_indices]
-        yield shuffled_y[:batch_size],shuffled_tx[:batch_size]
-
-"""
-
-
-def random_batches(y, tx, batch_size, num_batches):
-    """
-    generates num_batches random batches of size batch_size
-    """
-    data_size = len(y)
-    shuffle_indices = np.random.permutation(np.arange(data_size))
-    shuffled_y = y[shuffle_indices]
-    shuffled_tx = tx[shuffle_indices]
-
-    for batch_num in range(min(num_batches, (int)(data_size/batch_size)+1)):
-        start_index = batch_num * batch_size
-        end_index = min((batch_num + 1) * batch_size, data_size)
-        if start_index != end_index:
-            yield shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]
-
-
-"""
-def random_batches(y, tx, batch_size, num_batches):
-    """
-# generates num_batches random batches of size batch_size
-"""
-    data_size = len(y)
-    batches=[]
-    batch_cuts=(int)(data_size/batch_size)+1
-
-    while True:
-        shuffle_indices = np.random.permutation(np.arange(data_size))
-        shuffled_y = y[shuffle_indices]
-        shuffled_tx = tx[shuffle_indices]
-        for batch_cut in range(batch_cuts):
-            start_index = batch_cut * batch_size
-            end_index = min((batch_cut + 1) * batch_size, data_size)
-            if start_index != end_index:
-                batches.append([shuffled_y[start_index:end_index], shuffled_tx[start_index:end_index]])
-            if len(batches)==num_batches:
-                return batches
-"""
-
-
 def logistic_regression_GD(y, tx, initial_w, max_iter, gamma):
-    """
-    applies logistic regression using gradient descent to optimize w
-    """
+    """applies logistic regression using gradient descent to optimize w"""
     # initializing the weights
     w = initial_w
 
@@ -173,23 +126,23 @@ def logistic_regression_GD(y, tx, initial_w, max_iter, gamma):
         # updating the weights
         grad = log_likelihood_gradient(y, tx, w)
         w -= gamma*grad
-
+        if iter % max_iters//10 == 0:
+            print(log_likelihood_loss(y, tx, w))
     return w, log_likelihood_loss(y, tx, w)
 
 
-def logistic_regression_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
-    """
-    applies logistic regression using stochastic gradient descent to optimize w
-    """
+def logistic_regression_SGD(y, tx, initial_w, max_iters, gamma):
+    """applies logistic regression using stochastic gradient descent to optimize w"""
     # initializing the weights
     w = initial_w
 
     # logistic regression
-    for yb, txb in random_batches(y, tx, batch_size, max_iters):
+    for it,(yb, txb) in enumerate(random_batches(y, tx, max_iters)):
         # updating the weights
-        grad = log_likelihood_gradient(yb, txb, w)
+        grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)
         w -= gamma*grad
-
+        if it % max_iters//10 == 0:
+            print(log_likelihood_loss(y, tx, w))
     return w, log_likelihood_loss(y, tx, w)
 
 ##################################################
@@ -198,9 +151,7 @@ def logistic_regression_SGD(y, tx, initial_w, batch_size, max_iters, gamma):
 
 
 def reg_logistic_regression_GD(y, tx, lambda_, initial_w, max_iters, gamma):
-    """
-    applies regularized logistic regression using gradient descent to optimize w
-    """
+    """applies regularized logistic regression using gradient descent to optimize w"""
     # initializing the weights
     w = initial_w
 
@@ -208,40 +159,41 @@ def reg_logistic_regression_GD(y, tx, lambda_, initial_w, max_iters, gamma):
     for iter in range(max_iters):
         # updating the weights
         grad = log_likelihood_gradient(y, tx, w)+2*lambda_*w
+        if iter % max_iters//10 == 0:
+            print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
         w -= gamma*grad
-
-    loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
+    loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
 
 
-def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, batch_size, max_iters, gamma):
-    """
-    applies regularized logistic regression using stochastic gradient descent to optimize w
-    """
+def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, max_iters, gamma):
+    """applies regularized logistic regression using stochastic gradient descent to optimize w"""
     # initializing the weights
     w = initial_w
-
+    
     # regularized logistic regression
-    for yb, txb in random_batches(y, tx, batch_size, max_iters):
+    for it, (yb, txb) in enumerate(random_batches(y, tx, max_iters)):
         # updating the weights
-        grad = log_likelihood_gradient(yb, txb, w)+2*lambda_*w
+        grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)+2*lambda_*w
         w -= gamma*grad
-
-    loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T@w)
+        if it % max_iters//10 == 0:
+            print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
+    loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
 
+##################################################
+# Cross-Validation
+##################################################
 
-def build_k_indices(y, k_fold, seed=1):
-    """
-    splits indices of data into 'k_folds' folds.
-    """
-    num_row = len(y)
-    # floor division
+def build_k_indices(num_row, k_fold, seed=1):
+    """splits indices of data into 'k_folds' folds."""
+    # setting the random seed
+    np.random.seed(seed)
+    
+    # interval computation
     interval = num_row // k_fold
 
-    np.random.seed(seed)
-
-    # Build k_folds indices
+    # build k_folds indices
     indices = np.random.permutation(num_row)
     k_indices = [indices[k * interval:(k + 1) * interval]
                  for k in range(k_fold)]
@@ -250,19 +202,100 @@ def build_k_indices(y, k_fold, seed=1):
 
 
 def split_train_test(y, tx, k_indices, k):
-    """
-    splits data into train and test subsets given the fold indices 'k_indices' and the fold index 'k'.
-    """
-    # use 1 split for test
-    test_indice = k_indices[k]
+    """splits data into train and test subsets given the fold indices 'k_indices' and the fold index 'k'."""
+    # get the test split
+    test_ind = k_indices[k]
 
-    # use k-1 split for train
-    train_splits = [i for i in range(k_indices.shape[0]) if i is not k]
+    # get the k-1 train splits
+    train_splits = np.delete(k_indices,k,0)
     train_ind = k_indices[train_splits].reshape(-1)
 
     x_train = tx[train_ind]
-    x_test = tx[test_indice]
+    x_test = tx[test_ind]
     y_train = y[train_ind]
-    y_test = y[test_indice]
+    y_test = y[test_ind]
 
     return x_train, x_test, y_train, y_test
+
+def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter_, gamma, reg_f, loss_f):
+    """
+    runs cross validation, for every fold splits the data into test and train does feature expansion
+    and trains with reg_f, returns overall error.
+    """
+    # initializing useful variables
+    errors = np.zeros(num_folds)
+    initial_w = np.zeros(x_train.shape[1])
+    
+    # feature expansion
+    x_train_aug=augment(x_train, degree)
+    x_test_aug=augment(x_test, degree)
+    
+    # for each fold
+    for k in range(num_folds):
+        x_train, x_test, y_train, y_test = split_train_test(y, tx, k_indices, k)
+        w,err = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
+        errors[k] = err
+    
+    # computing the average error
+    avg_error = np.mean(errors)
+    return avg_error
+
+def cross_validation_SGD(y, tx, k_indices, num_folds, lamda, degree, iter_, gamma, reg_f, loss_f):
+    """runs cross validation: does feature expansion and trains with reg_f, returns full set error."""
+    # initializing useful variables
+    initial_w = np.zeros(x_train.shape[1])
+    
+    # feature expansion
+    x_train_aug=augment(x_train, degree)
+    x_test_aug=augment(x_test, degree)
+    
+    w,err = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
+    return err
+
+def find_besthyperparameters_CrossValid(y, tx, num_folds, lamdas, degrees, iter_, gamma, cross_val_f, reg_f, loss_f):
+    """finds the hyperparameters that give the lowest error for the cross-validation"""
+    # initializing useful variables
+    k_indices = build_k_indices(len(y), num_folds)
+    errors = np.zeros([lamdas.shape[0], degrees.shape[0]])
+    # for each hyperparameter
+    for i, lamd in enumerate(lamdas):
+        for j, deg in enumerate(degrees):
+            errors[i, j] = cross_val_f(y, tx, k_indices, num_folds, lamd, deg, iter_, gamma, reg_f, loss_f)
+
+    # evaluating which hyperparameters are the best
+    degree_best = degrees[np.argmin(errors) % len(degree)]
+    lambda_best = lamdas[np.argmin(errors) // len(degree)]
+
+    return lambda_best, degree_best
+
+######################################
+# Prediction Generator
+######################################
+
+def predict_labels(tx,w,logistic):
+    """generates class predictions given weights, and a test data matrix"""
+    y_pred= 2*sigmoid(tx.dot(w))-1 if logistic else tx.dot(w)
+    y_pred[np.where(y_pred <= 0)] = -1
+    y_pred[np.where(y_pred > 0)] = 1
+    return y_pred
+
+def predictions(y, ys, tx, px, mask_t, mask_p, reg_fs, len_pred, degrees, lambdas, max_iters, gammas, logistics):
+    """generates predictions using the regression function reg_f (trained on y,tx) and the inputs px"""
+    y_pred = np.zeros((len_pred,1))
+    for x_train, mask_train, x_test, mask_test, degree, lambda_, max_iter, gamma, logistic, reg_f, y_i in zip(tx, mask_t, px, mask_p, degrees, lambdas, max_iters, gammas, logistics, reg_fs, ys):
+        print("#######New subset#######")
+        y_correspond = y_i[mask_train]
+        x_train_aug = augment(x_train, degree)
+        print("Augmented train")
+        del x_train
+        initial_w= np.zeros((x_train_aug.shape[1], 1))
+        w,_ = reg_f(y_correspond, x_train_aug, lambda_, initial_w, max_iter, gamma)
+        print("Computed weights")
+        del x_train_aug
+        x_test_aug = augment(x_test, degree)
+        print("Augmented test")
+        del x_test
+        y_pred[mask_test] = predict_labels(x_test_aug,w,logistic)
+        print("Computed predictions")
+        del x_test_aug
+    return y_pred

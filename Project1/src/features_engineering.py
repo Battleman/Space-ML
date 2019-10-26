@@ -1,9 +1,7 @@
 import numpy as np
 
-
 def inv_log(x):
     return np.log(1 / (1 + x))
-
 
 def standardize(x):
     """Standardize the original data set."""
@@ -13,9 +11,8 @@ def standardize(x):
     x = x / std_x
     return x
 
-
 def augment(x, total_degree, simple_degree, tan_hyp_deg, ilog_deg):
-
+  
     assert total_degree > 1
 
     x_only_pos = x - x.min(axis=0)
