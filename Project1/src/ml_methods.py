@@ -126,7 +126,7 @@ def logistic_regression_GD(y, tx, initial_w, max_iter, gamma):
         # updating the weights
         grad = log_likelihood_gradient(y, tx, w)
         w -= gamma*grad
-        if iter % 100 == 0:
+        if iter % max_iters//10 == 0:
             print(log_likelihood_loss(y, tx, w))
     return w, log_likelihood_loss(y, tx, w)
 
@@ -141,7 +141,7 @@ def logistic_regression_SGD(y, tx, initial_w, max_iters, gamma):
         # updating the weights
         grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)
         w -= gamma*grad
-        if it % 10000 == 0:
+        if it % max_iters//10 == 0:
             print(log_likelihood_loss(y, tx, w))
     return w, log_likelihood_loss(y, tx, w)
 
@@ -159,7 +159,7 @@ def reg_logistic_regression_GD(y, tx, lambda_, initial_w, max_iters, gamma):
     for iter in range(max_iters):
         # updating the weights
         grad = log_likelihood_gradient(y, tx, w)+2*lambda_*w
-        if iter % 100 == 0:
+        if iter % max_iters//10 == 0:
             print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
         w -= gamma*grad
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
@@ -176,7 +176,7 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, max_iters, gamma):
         # updating the weights
         grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)+2*lambda_*w
         w -= gamma*grad
-        if it % 10000 == 0:
+        if it % max_iters//10 == 0:
             print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
@@ -279,17 +279,17 @@ def predict_labels(tx,w,logistic):
     y_pred[np.where(y_pred > 0)] = 1
     return y_pred
 
-def predictions(y, tx, px, mask_t, mask_p, reg_f, len_pred, degree, lambda_, max_iters, gamma, logistic=False):
+def predictions(y, ys, tx, px, mask_t, mask_p, reg_fs, len_pred, degrees, lambdas, max_iters, gammas, logistics):
     """generates predictions using the regression function reg_f (trained on y,tx) and the inputs px"""
     y_pred = np.zeros((len_pred,1))
-    for x_train, mask_train, x_test, mask_test in zip(tx, mask_t, px, mask_p):
+    for x_train, mask_train, x_test, mask_test, degree, lambda_, max_iter, gamma, logistic, reg_f, y_i in zip(tx, mask_t, px, mask_p, degrees, lambdas, max_iters, gammas, logistics, reg_fs, ys):
         print("#######New subset#######")
-        y_correspond = y[mask_train]
+        y_correspond = y_i[mask_train]
         x_train_aug = augment(x_train, degree)
         print("Augmented train")
         del x_train
         initial_w= np.zeros((x_train_aug.shape[1], 1))
-        w,_ = reg_f(y_correspond, x_train_aug, lambda_, initial_w, max_iters, gamma)
+        w,_ = reg_f(y_correspond, x_train_aug, lambda_, initial_w, max_iter, gamma)
         print("Computed weights")
         del x_train_aug
         x_test_aug = augment(x_test, degree)
