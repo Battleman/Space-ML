@@ -25,7 +25,7 @@ def preprocessing(x):
     masks = [
         x[:,jet_ind]==0,
         x[:,jet_ind]==1,
-        x[:,jet_ind]>0
+        x[:,jet_ind]>1
     ]
     
     split_cleaned = []
