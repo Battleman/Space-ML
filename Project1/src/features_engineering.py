@@ -11,7 +11,7 @@ def standardize(x):
     x = x / std_x
     return x
 
-def augment(x, total_degree, simple_degree, tan_hyp_deg, ilog_deg):
+def augment(x, total_degree, simple_degree=7, tan_hyp_deg=3, ilog_deg=3):
   
     assert total_degree > 1
 
