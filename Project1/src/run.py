@@ -1,31 +1,28 @@
 # Useful starting lines
 import numpy as np
+import yaml
 
-from preprocessing import preprocessing
 from features_engineering import augment
-from ml_methods import (least_squares,
-                        ridge_regression,
+from implementations import (least_squares, logistic_regression_SGD,
                         reg_logistic_regression_GD,
-                        reg_logistic_regression_SGD,
-                        logistic_regression_SGD)
-from proj1_helpers import load_csv_data, create_csv_submission, predict_labels
+                        reg_logistic_regression_SGD, ridge_regression)
+from preprocessing import preprocessing
+from proj1_helpers import create_csv_submission, load_csv_data, predict_labels
 
-CACHE = False
-
-NUM_SETS = 3
-
-COMBINED_DEGREES = [3, 3, 2]
-SIMPLE_DEGREES = [3, 4, 4]
-TAN_HYP_DEGREES = [4, 4, 4]
-INVERSE_LOG_DEGREES = [4, 4, 4]
-
-#########
-# File paths
-#########
-DATA_TRAIN_PATH = '../data/train.csv'
-DATA_TEST_PATH = '../data/test.csv'
-OUTPUT_PATH = '../predictions.csv'
-
+with open("parameters.yaml") as f:
+    params = yaml.load(f, Loader=yaml.FullLoader)
+np.random.seed(1)
+COMBINED_DEGREES = params['COMBINED_DEGREES']
+SIMPLE_DEGREES = params['SIMPLE_DEGREES']
+TAN_HYP_DEGREES = params['TAN_HYP_DEGREES']
+INVERSE_LOG_DEGREES = params['INVERSE_LOG_DEGREES']
+ROOT_DEGREES = params['ROOT_DEGREES']
+NUM_SETS = params['NUM_SETS']
+DATA_TRAIN_PATH = params['DATA_TRAIN_PATH']
+DATA_TEST_PATH = params['DATA_TEST_PATH']
+OUTPUT_PATH = params['OUTPUT_PATH']
+CACHE = params['CACHE']
+LAMBDAS = params['lambdas']
 #########
 # Load CSV
 #########
@@ -66,7 +63,8 @@ for i in range(NUM_SETS):
                               COMBINED_DEGREES[i],
                               SIMPLE_DEGREES[i],
                               TAN_HYP_DEGREES[i],
-                              INVERSE_LOG_DEGREES[i])
+                              INVERSE_LOG_DEGREES[i],
+                              ROOT_DEGREES[i])
         if CACHE:
             with open(x_train_aug_fname, "wb") as f:
                 np.save(f, x_train_aug)
@@ -75,14 +73,14 @@ for i in range(NUM_SETS):
     # TODO change function to get weights
     print("Computing optimal weights")
     # w, _ = least_squares(y_correspond, x_train_aug)
-    w, _ = ridge_regression(y_correspond, x_train_aug, 1e-5)
+    w, _ = ridge_regression(y_correspond, x_train_aug, LAMBDAS[i])
     # w, _ = logistic_regression_SGD(y_correspond, x_train_aug, [0.0]*x_train_aug.shape[1], 1, 100000, 1e-3)
     print(w, np.unique(w))
     del x_train_aug
 
     # features engineering test set
     print("Augmenting testing set")
-      x_test_aug_fname = "cache/x_test_augmented_jet{}_{}dim.np".format(
+    x_test_aug_fname = "cache/x_test_augmented_jet{}_{}dim.np".format(
         i, COMBINED_DEGREES[i])
 
     try:
@@ -94,7 +92,8 @@ for i in range(NUM_SETS):
                              COMBINED_DEGREES[i],
                              SIMPLE_DEGREES[i],
                              TAN_HYP_DEGREES[i],
-                             INVERSE_LOG_DEGREES[i])
+                             INVERSE_LOG_DEGREES[i],
+                             ROOT_DEGREES[i])
         if CACHE:
             with open(x_test_aug_fname, "wb") as f:
                 np.save(f, x_test_aug)
