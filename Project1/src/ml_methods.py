@@ -30,7 +30,7 @@ def log_likelihood_loss(y, tx, w):
     p_1=np.log(p_1)
     return -np.sum((y==1)*p_1+(y==0)*p_0)
 
-def compute_cost(y, tx, w, method="mse"):
+def compute_cost(y, tx, w, method="mae"):
     """computes the cost by mse or mae"""
     err = y - tx.dot(w)
     if method.lower() == "mae":
@@ -45,7 +45,7 @@ def compute_cost(y, tx, w, method="mse"):
 # Gradient Functions
 ######################################
 
-def compute_gradient(y, tx, w, method="mse"):
+def compute_gradient(y, tx, w, method="mae"):
     """computes the gradient of the mse or mae"""
     err = y - tx.dot(w)
     if method.lower() == "mse":
@@ -74,7 +74,7 @@ def least_squares_GD(y, tx, initial_w, max_iters, gamma):
         # compute gradient
         grad = compute_gradient(y, tx, w)
         # gradient w by descent update
-        if n_iter % 100 == 0:
+        if n_iter % (max_iters//10) == 0:
             print(compute_cost(y, tx, w))
         w -= gamma * grad
 
@@ -90,7 +90,7 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
             grad = compute_gradient(np.array([yb]), txb[np.newaxis,:], w)
             # update w
             w -= gamma * grad
-            if it % 10000 == 0:
+            if it % (max_iters//10) == 0:
                 print(compute_cost(y, tx, w))
     return w, compute_cost(y, tx, w)
 
@@ -104,29 +104,28 @@ def least_squares(y, tx):
 
 def ridge_regression(y, tx, lambda_):
     """applies ridge regression to optimize w"""
-    lambdaI = (lambda_ * 2 * len(y)) * np.eye(tx.shape[1])
-    a = (tx.T.dot(tx)) + lambdaI
-    b = tx.T.dot(y)
-    w = np.linalg.solve(a, b)
-    loss = compute_cost(y, tx, w)
-    return w, loss
+    gram=tx.T@tx
+    u, d, ut=np.linalg.svd(gram, full_matrices=True)
+    d+=2*gram.shape[0]*lambda_
+    w=np.linalg.solve(np.diag(d).dot(ut),ut.dot(tx.T.dot(y)))
+    return w, compute_cost(y, tx, w)
 
 ################################################
 # Logistic Regression
 ################################################
 
 
-def logistic_regression_GD(y, tx, initial_w, max_iter, gamma):
+def logistic_regression_GD(y, tx, initial_w, max_iters, gamma):
     """applies logistic regression using gradient descent to optimize w"""
     # initializing the weights
     w = initial_w
 
     # logistic regression
-    for iter in range(max_iter):
+    for n_iter in range(max_iters):
         # updating the weights
         grad = log_likelihood_gradient(y, tx, w)
         w -= gamma*grad
-        if iter % max_iters//10 == 0:
+        if n_iter % (max_iters//10) == 0:
             print(log_likelihood_loss(y, tx, w))
     return w, log_likelihood_loss(y, tx, w)
 
@@ -141,7 +140,7 @@ def logistic_regression_SGD(y, tx, initial_w, max_iters, gamma):
         # updating the weights
         grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)
         w -= gamma*grad
-        if it % max_iters//10 == 0:
+        if it % (max_iters//10) == 0:
             print(log_likelihood_loss(y, tx, w))
     return w, log_likelihood_loss(y, tx, w)
 
@@ -159,8 +158,8 @@ def reg_logistic_regression_GD(y, tx, lambda_, initial_w, max_iters, gamma):
     for iter in range(max_iters):
         # updating the weights
         grad = log_likelihood_gradient(y, tx, w)+2*lambda_*w
-        if iter % max_iters//10 == 0:
-            print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
+        #if iter % (max_iters//2) == 0:
+            #print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
         w -= gamma*grad
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
@@ -176,8 +175,8 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, max_iters, gamma):
         # updating the weights
         grad = log_likelihood_gradient(np.array([yb]), txb[np.newaxis,:], w)+2*lambda_*w
         w -= gamma*grad
-        if it % max_iters//10 == 0:
-            print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
+        #if it % (max_iters//2) == 0:
+            #print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
 
@@ -267,35 +266,3 @@ def find_besthyperparameters_CrossValid(y, tx, num_folds, lamdas, degrees, iter_
     lambda_best = lamdas[np.argmin(errors) // len(degree)]
 
     return lambda_best, degree_best
-
-######################################
-# Prediction Generator
-######################################
-
-def predict_labels(tx,w,logistic):
-    """generates class predictions given weights, and a test data matrix"""
-    y_pred= 2*sigmoid(tx.dot(w))-1 if logistic else tx.dot(w)
-    y_pred[np.where(y_pred <= 0)] = -1
-    y_pred[np.where(y_pred > 0)] = 1
-    return y_pred
-
-def predictions(y, ys, tx, px, mask_t, mask_p, reg_fs, len_pred, degrees, lambdas, max_iters, gammas, logistics):
-    """generates predictions using the regression function reg_f (trained on y,tx) and the inputs px"""
-    y_pred = np.zeros((len_pred,1))
-    for x_train, mask_train, x_test, mask_test, degree, lambda_, max_iter, gamma, logistic, reg_f, y_i in zip(tx, mask_t, px, mask_p, degrees, lambdas, max_iters, gammas, logistics, reg_fs, ys):
-        print("#######New subset#######")
-        y_correspond = y_i[mask_train]
-        x_train_aug = augment(x_train, degree)
-        print("Augmented train")
-        del x_train
-        initial_w= np.zeros((x_train_aug.shape[1], 1))
-        w,_ = reg_f(y_correspond, x_train_aug, lambda_, initial_w, max_iter, gamma)
-        print("Computed weights")
-        del x_train_aug
-        x_test_aug = augment(x_test, degree)
-        print("Augmented test")
-        del x_test
-        y_pred[mask_test] = predict_labels(x_test_aug,w,logistic)
-        print("Computed predictions")
-        del x_test_aug
-    return y_pred

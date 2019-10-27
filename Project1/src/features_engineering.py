@@ -11,7 +11,7 @@ def standardize(x):
     x = x / std_x
     return x
 
-def augment(x, total_degree, simple_degree=7, tan_hyp_deg=3, ilog_deg=3):
+def augment(x, total_degree, simple_degree=7, tan_hyp_deg=10, ilog_deg=10):
   
     assert total_degree > 1
 
@@ -40,24 +40,24 @@ def augment(x, total_degree, simple_degree=7, tan_hyp_deg=3, ilog_deg=3):
                                   axis=1).T,
                           axis=1)
 
-    # # append simple degrees
-    # print("Adding simple powers")
-    # for deg in range(2, simple_degree+1):
-    #     print(deg)
-    #     x_aug = np.append(x_aug, np.power(x, deg), axis=1)
+    # append simple degrees
+    #print("Adding simple powers")
+    #for deg in range(2, simple_degree+1):
+        #print(deg)
+        #x_aug = np.append(x_aug, np.power(x, deg), axis=1)
 
-    # # compute hyperbolic tan and its powers
-    # print("Adding tanh powers")
-    # tanh = np.tanh(x)
-    # for deg in range(1, tan_hyp_deg+1):
-    #     x_aug = np.append(x_aug, np.power(tanh, deg), axis=1)
-    # del tanh
+    # compute hyperbolic tan and its powers
+    print("Adding tanh powers")
+    tanh = np.tanh(x)
+    for deg in range(1, tan_hyp_deg+1):
+        x_aug = np.append(x_aug, np.power(tanh, deg), axis=1)
+    del tanh
 
-    # # compute inverse log and append its powers
-    # print("Adding inverse log")
-    # ilog = inv_log(x_only_pos)
-    # for deg in range(1, ilog_deg+1):
-    #     x_aug = np.append(x_aug, np.power(ilog, deg), axis=1)
-    # del ilog
+    # compute inverse log and append its powers
+    print("Adding inverse log")
+    ilog = inv_log(x_only_pos)
+    for deg in range(1, ilog_deg+1):
+        x_aug = np.append(x_aug, np.power(ilog, deg), axis=1)
+    del ilog
 
     return standardize(x_aug)
