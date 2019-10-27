@@ -7,11 +7,11 @@ CROSS_VAL_ITERS: 5
 #####
 # Powers
 #####
-COMBINED_DEGREES: [3, 0, 0]
-SIMPLE_DEGREES: [5, 10, 10]
-TAN_HYP_DEGREES: [2,2,2]
-INVERSE_LOG_DEGREES: [0,0,0]
-ROOT_DEGREES: [0,0,0]
+COMBINED_DEGREES: [3, 3, 0]
+SIMPLE_DEGREES: [5, 11, 10]
+TAN_HYP_DEGREES: [2,5,2]
+INVERSE_LOG_DEGREES: [0,4,0]
+ROOT_DEGREES: [0,4,0]
 #########
 # File paths
 #########
@@ -22,7 +22,7 @@ OUTPUT_PATH: '../predictions.csv'
 ######
 # Hyperparameters
 ######
-lambdas: [1e-3,3e-3,1e-2]
+lambdas: [1.321e-10,1.321e-10,1.321e-10]
 # max_iters: [1000000,1000000,100000]
 # gammas: [1e-1,1e-2,1e-2]
 # logistics: [False,False,False]

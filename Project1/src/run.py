@@ -11,7 +11,7 @@ from proj1_helpers import create_csv_submission, load_csv_data, predict_labels
 
 with open("parameters.yaml") as f:
     params = yaml.load(f, Loader=yaml.FullLoader)
-
+np.random.seed(1)
 COMBINED_DEGREES = params['COMBINED_DEGREES']
 SIMPLE_DEGREES = params['SIMPLE_DEGREES']
 TAN_HYP_DEGREES = params['TAN_HYP_DEGREES']
@@ -20,7 +20,9 @@ ROOT_DEGREES = params['ROOT_DEGREES']
 NUM_SETS = params['NUM_SETS']
 DATA_TRAIN_PATH = params['DATA_TRAIN_PATH']
 DATA_TEST_PATH = params['DATA_TEST_PATH']
-
+OUTPUT_PATH = params['OUTPUT_PATH']
+CACHE = params['CACHE']
+LAMBDAS = params['lambdas']
 #########
 # Load CSV
 #########
@@ -61,7 +63,8 @@ for i in range(NUM_SETS):
                               COMBINED_DEGREES[i],
                               SIMPLE_DEGREES[i],
                               TAN_HYP_DEGREES[i],
-                              INVERSE_LOG_DEGREES[i])
+                              INVERSE_LOG_DEGREES[i],
+                              ROOT_DEGREES[i])
         if CACHE:
             with open(x_train_aug_fname, "wb") as f:
                 np.save(f, x_train_aug)
@@ -70,7 +73,7 @@ for i in range(NUM_SETS):
     # TODO change function to get weights
     print("Computing optimal weights")
     # w, _ = least_squares(y_correspond, x_train_aug)
-    w, _ = ridge_regression(y_correspond, x_train_aug, 1e-5)
+    w, _ = ridge_regression(y_correspond, x_train_aug, LAMBDAS[i])
     # w, _ = logistic_regression_SGD(y_correspond, x_train_aug, [0.0]*x_train_aug.shape[1], 1, 100000, 1e-3)
     print(w, np.unique(w))
     del x_train_aug
@@ -89,7 +92,8 @@ for i in range(NUM_SETS):
                              COMBINED_DEGREES[i],
                              SIMPLE_DEGREES[i],
                              TAN_HYP_DEGREES[i],
-                             INVERSE_LOG_DEGREES[i])
+                             INVERSE_LOG_DEGREES[i],
+                             ROOT_DEGREES[i])
         if CACHE:
             with open(x_test_aug_fname, "wb") as f:
                 np.save(f, x_test_aug)
