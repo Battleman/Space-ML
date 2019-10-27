@@ -10,22 +10,6 @@ from ml_methods import (least_squares,
                         logistic_regression_SGD)
 from proj1_helpers import load_csv_data, create_csv_submission, predict_labels
 
-CACHE = False
-
-NUM_SETS = 3
-
-COMBINED_DEGREES = [3, 3, 2]
-SIMPLE_DEGREES = [3, 4, 4]
-TAN_HYP_DEGREES = [4, 4, 4]
-INVERSE_LOG_DEGREES = [4, 4, 4]
-
-#########
-# File paths
-#########
-DATA_TRAIN_PATH = '../data/train.csv'
-DATA_TEST_PATH = '../data/test.csv'
-OUTPUT_PATH = '../predictions.csv'
-
 #########
 # Load CSV
 #########

@@ -1,0 +1,30 @@
+
+CACHE: False
+
+NUM_SETS: 3
+
+CROSS_VAL_ITERS: 5
+#####
+# Powers
+#####
+COMBINED_DEGREES: [3, 3, 3]
+SIMPLE_DEGREES: [9, 9, 9]
+TAN_HYP_DEGREES: [4, 4, 4]
+INVERSE_LOG_DEGREES: [4, 4, 4]
+ROOT_DEGREES: [3,3,3]
+#########
+# File paths
+#########
+DATA_TRAIN_PATH: '../data/train.csv'
+DATA_TEST_PATH: '../data/test.csv'
+OUTPUT_PATH: '../predictions.csv'
+
+######
+# Hyperparameters
+######
+lambdas: [1e-3,3e-3,1e-2]
+# max_iters: [1000000,1000000,100000]
+# gammas: [1e-1,1e-2,1e-2]
+# logistics: [False,False,False]
+# reg_fs:  [r,r,r]
+
