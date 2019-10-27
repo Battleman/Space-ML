@@ -48,9 +48,9 @@ def augment(x, total_degree=None, simple_degree=None, tan_hyp_deg=None, ilog_deg
     # append simple degrees
     if simple_degree is not None and simple_degree > 1:
         print("Adding {} simple powers".format(simple_degree))
-        max(2, (total_degree if total_degree is not None else 0))
+        min_deg = max(2, (total_degree if total_degree is not None else 0))
         additional_powers = np.concatenate(
-            [np.power(x_std, deg) for deg in range(, simple_degree+1)], axis=1)
+            [np.power(x_std, deg) for deg in range(min_deg, simple_degree+1)], axis=1)
         x_aug = np.append(x_aug, additional_powers, axis=1)
 
     # append simple roots
