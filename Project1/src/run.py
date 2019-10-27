@@ -1,14 +1,25 @@
 # Useful starting lines
 import numpy as np
+import yaml
 
-from preprocessing import preprocessing
 from features_engineering import augment
-from ml_methods import (least_squares,
-                        ridge_regression,
+from implementations import (least_squares, logistic_regression_SGD,
                         reg_logistic_regression_GD,
-                        reg_logistic_regression_SGD,
-                        logistic_regression_SGD)
-from proj1_helpers import load_csv_data, create_csv_submission, predict_labels
+                        reg_logistic_regression_SGD, ridge_regression)
+from preprocessing import preprocessing
+from proj1_helpers import create_csv_submission, load_csv_data, predict_labels
+
+with open("parameters.yaml") as f:
+    params = yaml.load(f, Loader=yaml.FullLoader)
+
+COMBINED_DEGREES = params['COMBINED_DEGREES']
+SIMPLE_DEGREES = params['SIMPLE_DEGREES']
+TAN_HYP_DEGREES = params['TAN_HYP_DEGREES']
+INVERSE_LOG_DEGREES = params['INVERSE_LOG_DEGREES']
+ROOT_DEGREES = params['ROOT_DEGREES']
+NUM_SETS = params['NUM_SETS']
+DATA_TRAIN_PATH = params['DATA_TRAIN_PATH']
+DATA_TEST_PATH = params['DATA_TEST_PATH']
 
 #########
 # Load CSV
@@ -66,7 +77,7 @@ for i in range(NUM_SETS):
 
     # features engineering test set
     print("Augmenting testing set")
-      x_test_aug_fname = "cache/x_test_augmented_jet{}_{}dim.np".format(
+    x_test_aug_fname = "cache/x_test_augmented_jet{}_{}dim.np".format(
         i, COMBINED_DEGREES[i])
 
     try:
