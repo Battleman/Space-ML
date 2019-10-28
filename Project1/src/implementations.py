@@ -115,20 +115,14 @@ def least_squares(y, tx):
 
 def ridge_regression(y, tx, lambda_):
     """applies ridge regression to optimize w"""
-#     #computing the gram matrix
-#     gram=tx.T@tx
-#     #diagonalizing the gram matrix
-#     u, d, ut=np.linalg.svd(gram, full_matrices=True)
-#     #adding the lmbda matrix to the diagonal matrix to prevent approximation problems
-#     d+=2*gram.shape[0]*lambda_
-#     #solving the least squares linear problem
-#     w=np.linalg.solve(np.diag(d).dot(ut),ut.dot(tx.T.dot(y)))
-#     return w, compute_cost(y, tx, w)
-
     #computing the gram matrix
     gram=tx.T@tx
-    gram+=2*gram.shape[0]*lambda_
-    w=np.linalg.solve(gram,tx.T.dot(y))
+    #diagonalizing the gram matrix
+    u, d, ut=np.linalg.svd(gram, full_matrices=True)
+    #adding the lmbda matrix to the diagonal matrix to prevent approximation problems
+    d+=2*gram.shape[0]*lambda_
+    #solving the least squares linear problem
+    w=np.linalg.solve(np.diag(d).dot(ut),ut.dot(tx.T.dot(y)))
     return w, compute_cost(y, tx, w)
 
 ################################################
@@ -201,96 +195,3 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, max_iters, gamma):
             #print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
-
-##################################################
-# Cross-Validation
-##################################################
-
-
-def build_k_indices(num_row, k_fold, seed=1):
-    """splits indices of data into 'k_folds' folds."""
-    # setting the random seed
-    np.random.seed(seed)
-
-    # interval computation
-    interval = num_row // k_fold
-
-    # build k_folds indices
-    indices = np.random.permutation(num_row)
-    k_indices = [indices[k * interval:(k + 1) * interval]
-                 for k in range(k_fold)]
-
-    return np.array(k_indices)
-
-
-def split_train_test(y, tx, k_indices, k):
-    """splits data into train and test subsets given the fold indices 'k_indices' and the fold index 'k'."""
-    # get the test split
-    test_ind = k_indices[k]
-
-    # get the k-1 train splits
-    train_splits = np.delete(k_indices, k, 0)
-    train_ind = k_indices[train_splits].reshape(-1)
-
-    x_train = tx[train_ind]
-    x_test = tx[test_ind]
-    y_train = y[train_ind]
-    y_test = y[test_ind]
-
-    return x_train, x_test, y_train, y_test
-
-
-def cross_validation(y, tx, k_indices, num_folds, lamda, degree, iter_, gamma, reg_f, loss_f):
-    """
-    runs cross validation, for every fold splits the data into test and train does feature expansion
-    and trains with reg_f, returns overall error.
-    """
-    # initializing useful variables
-    errors = np.zeros(num_folds)
-    initial_w = np.zeros(x_train.shape[1])
-
-    # feature expansion
-    x_train_aug = augment(x_train, degree)
-    x_test_aug = augment(x_test, degree)
-
-    # for each fold
-    for k in range(num_folds):
-        x_train, x_test, y_train, y_test = split_train_test(
-            y, tx, k_indices, k)
-        w, err = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
-        errors[k] = err
-
-    # computing the average error
-    avg_error = np.mean(errors)
-    return avg_error
-
-
-def cross_validation_SGD(y, tx, k_indices, num_folds, lamda, degree, iter_, gamma, reg_f, loss_f):
-    """runs cross validation: does feature expansion and trains with reg_f, returns full set error."""
-    # initializing useful variables
-    initial_w = np.zeros(x_train.shape[1])
-
-    # feature expansion
-    x_train_aug = augment(x_train, degree)
-    x_test_aug = augment(x_test, degree)
-
-    w, err = reg_f(y_train, x_train_aug, lamda, initial_w, iter_, gamma)
-    return err
-
-
-def find_besthyperparameters_CrossValid(y, tx, num_folds, lamdas, degrees, iter_, gamma, cross_val_f, reg_f, loss_f):
-    """finds the hyperparameters that give the lowest error for the cross-validation"""
-    # initializing useful variables
-    k_indices = build_k_indices(len(y), num_folds)
-    errors = np.zeros([lamdas.shape[0], degrees.shape[0]])
-    # for each hyperparameter
-    for i, lamd in enumerate(lamdas):
-        for j, deg in enumerate(degrees):
-            errors[i, j] = cross_val_f(
-                y, tx, k_indices, num_folds, lamd, deg, iter_, gamma, reg_f, loss_f)
-
-    # evaluating which hyperparameters are the best
-    degree_best = degrees[np.argmin(errors) % len(degree)]
-    lambda_best = lamdas[np.argmin(errors) // len(degree)]
-    
-    return lambda_best, degree_best

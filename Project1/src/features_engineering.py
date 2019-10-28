@@ -17,7 +17,7 @@ def augment(x, total_degree=None, simple_degree=None, tan_hyp_deg=None, ilog_deg
 
 
     x_only_pos = x - x.min(axis=0)
-    x_std = standardize(x.copy())
+    x_std = x.copy()
 
     # # add a column of ones
     x_aug = np.append(np.ones((len(x_std), 1)), x_std, axis=1)
@@ -72,4 +72,4 @@ def augment(x, total_degree=None, simple_degree=None, tan_hyp_deg=None, ilog_deg
             x_aug = np.append(x_aug, np.power(ilog, deg), axis=1)
         del ilog
         
-    return x_aug
+    return standardize(x_aug)

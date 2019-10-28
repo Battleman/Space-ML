@@ -3,9 +3,9 @@ import numpy as np
 import yaml
 
 from features_engineering import augment
-from implementations import (least_squares, logistic_regression_SGD,
-                        reg_logistic_regression_GD,
-                        reg_logistic_regression_SGD, ridge_regression)
+from implementations import (least_squares, least_squares_GD,least_squares_SGD, ridge_regression,
+                             logistic_regression,logistic_regression_SGD,
+                             reg_logistic_regression,reg_logistic_regression_SGD)
 from preprocessing import preprocessing
 from proj1_helpers import create_csv_submission, load_csv_data, predict_labels
 
@@ -75,7 +75,6 @@ for i in range(NUM_SETS):
     # w, _ = least_squares(y_correspond, x_train_aug)
     w, _ = ridge_regression(y_correspond, x_train_aug, LAMBDAS[i])
     # w, _ = logistic_regression_SGD(y_correspond, x_train_aug, [0.0]*x_train_aug.shape[1], 1, 100000, 1e-3)
-    print(w, np.unique(w))
     del x_train_aug
 
     # features engineering test set
