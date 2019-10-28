@@ -18,7 +18,7 @@ def k_fold_splits(y, x, num_folds):
         val_ind = k_indices[k]
         tr_indices = k_indices[~(np.arange(k_indices.shape[0]) == k)]
         tr_indices = tr_indices.reshape(-1)
-        kfold_return.append([x[tr_indices], x[val_ind],y[tr_indices], y[val_ind]])
+        kfold_return.append([np.array(x)[tr_indices.astype(int)], np.array(x)[val_ind.astype(int)],y[tr_indices], y[val_ind]])
     return kfold_return
 
 
