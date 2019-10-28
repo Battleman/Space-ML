@@ -115,20 +115,14 @@ def least_squares(y, tx):
 
 def ridge_regression(y, tx, lambda_):
     """applies ridge regression to optimize w"""
-#     #computing the gram matrix
-#     gram=tx.T@tx
-#     #diagonalizing the gram matrix
-#     u, d, ut=np.linalg.svd(gram, full_matrices=True)
-#     #adding the lmbda matrix to the diagonal matrix to prevent approximation problems
-#     d+=2*gram.shape[0]*lambda_
-#     #solving the least squares linear problem
-#     w=np.linalg.solve(np.diag(d).dot(ut),ut.dot(tx.T.dot(y)))
-#     return w, compute_cost(y, tx, w)
-
     #computing the gram matrix
     gram=tx.T@tx
-    gram+=2*gram.shape[0]*lambda_
-    w=np.linalg.solve(gram,tx.T.dot(y))
+    #diagonalizing the gram matrix
+    u, d, ut=np.linalg.svd(gram, full_matrices=True)
+    #adding the lmbda matrix to the diagonal matrix to prevent approximation problems
+    d+=2*gram.shape[0]*lambda_
+    #solving the least squares linear problem
+    w=np.linalg.solve(np.diag(d).dot(ut),ut.dot(tx.T.dot(y)))
     return w, compute_cost(y, tx, w)
 
 ################################################
