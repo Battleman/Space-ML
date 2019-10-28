@@ -1,4 +1,4 @@
-# Higgs Boson Challenge
+﻿# Higgs Boson Challenge
 
 The Kaggle competition on predicting if a particle is a Higgs boson based on the decay signature.
 
@@ -41,5 +41,5 @@ The powers labelled COMBINED_DEGREES designates the maximum degree polynomial co
 
 ## Authors:
 * Alexandre Reynaud
-* Othmane Squalli
+* Othmane Sqalli Houssaini
 * Olivier Cloux
