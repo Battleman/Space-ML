@@ -8,6 +8,7 @@ def k_fold_splits(y, x, num_folds):
 
     # build k_indices
     interval = rows // num_folds
+    np.random.seed(seed=1)
     rand_indices = np.random.permutation(rows)
     k_indices = np.array([rand_indices[k * interval: (k + 1) * interval]
                  for k in range(num_folds)])
