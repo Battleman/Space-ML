@@ -51,6 +51,7 @@ def compute_cost(y, tx, w, method="mae"):
 # Gradient Functions
 ######################################
 
+
 def compute_gradient(y, tx, w, method="mse"):
     """computes the gradient of the mse or mae"""
     err = y - tx.dot(w)
@@ -94,13 +95,13 @@ def least_squares_SGD(y, tx, initial_w, max_iters, gamma):
     # Define parameters to store w and loss
     w = initial_w
     loss = compute_gradient(y, tx, initial_w)
-    for it,(yb, txb) in enumerate(random_batches(y, tx, max_iters)):
+    for it, (yb, txb) in enumerate(random_batches(y, tx, max_iters)):
             # compute 1 SGD and the loss
-            grad = compute_gradient(np.array([yb]), txb[np.newaxis,:], w)
-            # update w
-            w -= gamma * grad
-            if it % (max_iters//10) == 0:
-                print(compute_cost(y, tx, w))
+        grad = compute_gradient(np.array([yb]), txb[np.newaxis, :], w)
+        # update w
+        w -= gamma * grad
+        if it % (max_iters//10) == 0:
+            print(compute_cost(y, tx, w))
     return w, compute_cost(y, tx, w)
 
 
@@ -115,14 +116,14 @@ def least_squares(y, tx):
 
 def ridge_regression(y, tx, lambda_):
     """applies ridge regression to optimize w"""
-    #computing the gram matrix
-    gram=tx.T@tx
-    #diagonalizing the gram matrix
-    u, d, ut=np.linalg.svd(gram, full_matrices=True)
-    #adding the lmbda matrix to the diagonal matrix to prevent approximation problems
-    d+=2*gram.shape[0]*lambda_
-    #solving the least squares linear problem
-    w=np.linalg.solve(np.diag(d).dot(ut),ut.dot(tx.T.dot(y)))
+    # computing the gram matrix
+    gram = tx.T@tx
+    # diagonalizing the gram matrix
+    u, d, ut = np.linalg.svd(gram, full_matrices=True)
+    # adding the lmbda matrix to the diagonal matrix to prevent approximation problems
+    d += 2*gram.shape[0]*lambda_
+    # solving the least squares linear problem
+    w = np.linalg.solve(np.diag(d).dot(ut), ut.dot(tx.T.dot(y)))
     return w, compute_cost(y, tx, w)
 
 ################################################
@@ -173,8 +174,8 @@ def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     for iter in range(max_iters):
         # updating the weights
         grad = log_likelihood_gradient(y, tx, w)+2*lambda_*w
-        #if iter % (max_iters//2) == 0:
-            #print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
+        # if iter % (max_iters//2) == 0:
+        #print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
         w -= gamma*grad
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
@@ -191,7 +192,7 @@ def reg_logistic_regression_SGD(y, tx, lambda_, initial_w, max_iters, gamma):
         grad = log_likelihood_gradient(
             np.array([yb]), txb[np.newaxis, :], w)+2*lambda_*w
         w -= gamma*grad
-        #if it % (max_iters//2) == 0:
-            #print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
+        # if it % (max_iters//2) == 0:
+        #print(log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w)))
     loss = log_likelihood_loss(y, tx, w)+lambda_*np.squeeze(w.T.dot(w))
     return w, loss
