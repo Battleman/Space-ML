@@ -115,14 +115,20 @@ def least_squares(y, tx):
 
 def ridge_regression(y, tx, lambda_):
     """applies ridge regression to optimize w"""
+#     #computing the gram matrix
+#     gram=tx.T@tx
+#     #diagonalizing the gram matrix
+#     u, d, ut=np.linalg.svd(gram, full_matrices=True)
+#     #adding the lmbda matrix to the diagonal matrix to prevent approximation problems
+#     d+=2*gram.shape[0]*lambda_
+#     #solving the least squares linear problem
+#     w=np.linalg.solve(np.diag(d).dot(ut),ut.dot(tx.T.dot(y)))
+#     return w, compute_cost(y, tx, w)
+
     #computing the gram matrix
     gram=tx.T@tx
-    #diagonalizing the gram matrix
-    u, d, ut=np.linalg.svd(gram, full_matrices=True)
-    #adding the lmbda matrix to the diagonal matrix to prevent approximation problems
-    d+=2*gram.shape[0]*lambda_
-    #solving the least squares linear problem
-    w=np.linalg.solve(np.diag(d).dot(ut),ut.dot(tx.T.dot(y)))
+    gram+=2*gram.shape[0]*lambda_
+    w=np.linalg.solve(gram,tx.T.dot(y))
     return w, compute_cost(y, tx, w)
 
 ################################################
@@ -130,7 +136,7 @@ def ridge_regression(y, tx, lambda_):
 ################################################
 
 
-def logistic_regression_GD(y, tx, initial_w, max_iters, gamma):
+def logistic_regression(y, tx, initial_w, max_iters, gamma):
     """applies logistic regression using gradient descent to optimize w"""
     # initializing the weights
     w = initial_w
@@ -164,7 +170,7 @@ def logistic_regression_SGD(y, tx, initial_w, max_iters, gamma):
 ##################################################
 
 
-def reg_logistic_regression_GD(y, tx, lambda_, initial_w, max_iters, gamma):
+def reg_logistic_regression(y, tx, lambda_, initial_w, max_iters, gamma):
     """applies regularized logistic regression using gradient descent to optimize w"""
     # initializing the weights
     w = initial_w
