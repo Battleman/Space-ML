@@ -4,7 +4,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from plotly.graph_objs import Scene, XAxis, YAxis, ZAxis, Layout
-
+import plotly.graph_objects as go
 
 def plot_raw_data(ratings):
     """plot the statistics result on raw rating data."""

@@ -14,7 +14,7 @@ def read_txt(path):
 
 
 def load_data(path_dataset):
-    """Load data in text format, one rating per line, as in the kaggle competition."""
+    """Load data in text format, one rating per line."""
     data = read_txt(path_dataset)[1:]
     return preprocess_data(data)
 
@@ -38,7 +38,6 @@ def preprocess_data(data):
 
     # do statistics on the dataset.
     min_row, max_row, min_col, max_col = statistics(data)
-    print("number of items: {}, number of users: {}".format(max_row, max_col))
 
     # build rating matrix.
     ratings = sp.lil_matrix((max_row, max_col))
@@ -67,12 +66,6 @@ def build_index_groups(train):
     nz_col_rowindices = [(g, np.array([v[0] for v in value]))
                          for g, value in grouped_nz_train_bycol]
     return nz_train, nz_row_colindices, nz_col_rowindices
-
-
-def calculate_mse(real_label, prediction):
-    """calculate MSE."""
-    t = real_label - prediction
-    return 1.0 * t.dot(t.T)
 
 
 def update_user_feature(
@@ -117,8 +110,7 @@ def update_item_feature(
     return updated_item_features
 
 
-def split_data(ratings, num_items_per_user, num_users_per_item,
-               min_num_ratings, p_test=0.1):
+def split_data(ratings, p_test=0.1):
     """split the ratings to training data and test data.
     Args:
         min_num_ratings:
@@ -127,45 +119,40 @@ def split_data(ratings, num_items_per_user, num_users_per_item,
     # set seed
     np.random.seed(988)
 
-    # select user and item based on the condition.
-    valid_users = np.where(num_items_per_user >= min_num_ratings)[0]
-    valid_items = np.where(num_users_per_item >= min_num_ratings)[0]
-    valid_ratings = ratings[valid_items, :][:, valid_users]
-
     # init
-    num_rows, num_cols = valid_ratings.shape
+    num_rows, num_cols = ratings.shape
     train = sp.lil_matrix((num_rows, num_cols))
     test = sp.lil_matrix((num_rows, num_cols))
 
     print("the shape of original ratings. (# of row, # of col): {}".format(
         ratings.shape))
-    print("the shape of valid ratings. (# of row, # of col): {}".format(
-        (num_rows, num_cols)))
 
-    nz_items, nz_users = valid_ratings.nonzero()
+    nz_items, nz_users = ratings.nonzero()
 
     # split the data
-    for user in set(nz_users):
+    set_nz_users = set(nz_users)
+    for i, user in enumerate(set_nz_users):
+        print("Splitting progression: {}%".format(100*(i+1)/len(set_nz_users)), end="\r")
         # randomly select a subset of ratings
-        row, col = valid_ratings[:, user].nonzero()
+        row, col = ratings[:, user].nonzero()
         selects = np.random.choice(row, size=int(len(row) * p_test))
         residual = list(set(row) - set(selects))
 
         # add to train set
         for r in residual:
-            train[r, user] = valid_ratings[r, user]
+            train[r, user] = ratings[r, user]
 
         # add to test set
         for s in selects:
-            test[s, user] = valid_ratings[s, user]
-
-    print("Total number of nonzero elements in origial data:{v}".format(
+            test[s, user] = ratings[s, user]
+    print("")
+    print("Total number of nonzero elements in original data:{v:,}".format(
         v=ratings.nnz))
-    print("Total number of nonzero elements in train data:{v}".format(
+    print("Total number of nonzero elements in train data:{v:,}".format(
         v=train.nnz))
     print(
-        "Total number of nonzero elements in test data:{v}".format(v=test.nnz))
-    return valid_ratings, train, test
+        "Total number of nonzero elements in test data:{v:,}".format(v=test.nnz))
+    return train, test
 
 
 def init_MF(train, num_features):
@@ -219,7 +206,9 @@ def ALS(train, test=None, lambda_user=0.1, lambda_item=0.7,
           "start the ALS algorithm...".format(lambda_user, lambda_item))
     step = 0
     while step < max_steps:
-        if change > stop_criterion:
+        if change < stop_criterion:
+            print("")
+            print("Quitting because converged")
             break
         # update user feature & item feature
         user_features = update_user_feature(train,
@@ -241,12 +230,14 @@ def ALS(train, test=None, lambda_user=0.1, lambda_item=0.7,
         step += 1
     else:
         # didn't break out of loop, so max step reached
+        print("")
         print("CONVERGENCE TOO SLOW, INTERRUPTED")
 
     # if necessary, evaluate the test error
+    rmse=None
     if test is not None:
         nnz_row, nnz_col = test.nonzero()
         nnz_test = list(zip(nnz_row, nnz_col))
         rmse = compute_error(test, user_features, item_features, nnz_test)
         print("test RMSE after running ALS: {v}.".format(v=rmse))
-    return user_features, item_features
+    return user_features, item_features, rmse
