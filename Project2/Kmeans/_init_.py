@@ -18,8 +18,8 @@ def main(k):
         np.array: The prediction
     """
     #useful constants
-    input_path='../Data/data_train.csv'
-    format_path='../Data/sampleSubmission.csv'
+    input_path='../data/data_train.csv'
+    format_path='../data/sampleSubmission.csv'
     max_iters = 100
     threshold = 1e-6
     #optimal k computed empirically
@@ -31,7 +31,9 @@ def main(k):
     #generating a prediction using the clusters of similar users
     mu_rounded=np.round(mu)
     for i in range(k_opt):
-        data[assignments==i]=np.where(np.isnan(data[assignments==i]),mu_rounded[i],data[assignments==i])
+        data[assignments==i] = np.where(np.isnan(data[assignments==i]),
+                                        mu_rounded[i],
+                                        data[assignments==i])
     #postprocessing
     data=postprocessing(data, format_path)
     return data
