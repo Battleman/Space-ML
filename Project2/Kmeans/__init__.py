@@ -12,28 +12,30 @@ def main(input_path, format_path, k):
     then finally postprocesses the result to give predictions the desired format.
 
     Args:
+        input_path: Path to the samples
+        format_path: Path to the submission format file
         k: The amount of clusters
         
     Returns:
         np.array: The prediction
     """
     #useful constants
-    input_path='data/data_train.csv'
-    format_path='data/sampleSubmission.csv'
     max_iters = 100
     threshold = 1e-6
-    #optimal k computed empirically
-    k_opt=k#6
     #preprocessing
     data=preprocessing(input_path)
     #kmeans
-    assignments, mu, _=kmeans(data, k_opt, max_iters, threshold)
+    print('Kmeans for k=',k,':')
+    assignments, mu, _=kmeans(data, k, max_iters, threshold)
     #generating a prediction using the clusters of similar users
     mu_rounded=np.round(mu)
-    for i in range(k_opt):
+    for i in range(k):
         data[assignments==i] = np.where(np.isnan(data[assignments==i]),
                                         mu_rounded[i],
                                         data[assignments==i])
     #postprocessing
     data=postprocessing(data, format_path)
     return data
+
+if __name__ == "__main__":
+    main("../data/data_train.csv", "../data/sampleSubmission.csv")
