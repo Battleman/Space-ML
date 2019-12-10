@@ -68,10 +68,10 @@ def kmeans(data, k, max_iters, threshold):
         #calculate the average loss over all points
         old_avg_loss=average_loss
         average_loss = np.mean(losses)
-        print("The current iteration of k-means is: {i}, \
-               the average loss is {l}.".format(i=iter, l=average_loss))
+        print("The current iteration of k-means is: {i}, the average loss is {l}.".format(i=iter, l=average_loss), end='\r')
         #check converge
         if iter > 0 and np.abs(average_loss - old_avg_loss) < threshold:
+            print('')
             break
         #update k-means information.
         mu_old = mu
