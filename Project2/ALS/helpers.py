@@ -5,22 +5,18 @@ from itertools import groupby
 
 import numpy as np
 import scipy.sparse as sp
-
-
-def read_txt(path):
-    """read text file from path."""
-    with open(path, "r") as f:
-        return f.read().splitlines()
+import pickle as pkl
 
 
 def load_data(path_dataset):
     """Load data in text format, one rating per line."""
-    data = read_txt(path_dataset)[1:]
-    return preprocess_data(data)
+    with open(path_dataset, "r") as f:
+        data = f.read().splitlines()[1:]
+    return _preprocess_data(data)
 
 
-def preprocess_data(data):
-    """preprocessing the text data, conversion to numerical array format."""
+def _preprocess_data(data):
+    """Preprocessing the text data, conversion to numerical array format."""
     def deal_line(line):
         pos, rating = line.split(',')
         row, col = pos.split("_")
@@ -44,6 +40,18 @@ def preprocess_data(data):
     for row, col, rating in data:
         ratings[row - 1, col - 1] = rating
     return ratings
+
+
+def deserialize_costs(costs_filename):
+    try:
+        with open(costs_filename, "rb") as f:
+            print("Successfully retrieved cached lambdas optimization")
+            costs = pkl.load(f)
+    except FileNotFoundError:
+        print("Unable to retrieve cached lambdas optimization, " +
+              "starting from scratch")
+        costs = {}
+    return costs
 
 
 def group_by(data, index):
@@ -132,7 +140,8 @@ def split_data(ratings, p_test=0.1):
     # split the data
     set_nz_users = set(nz_users)
     for i, user in enumerate(set_nz_users):
-        print("Splitting progression: {}%".format(100*(i+1)/len(set_nz_users)), end="\r")
+        print("Splitting progression: {}%".format(
+            100*(i+1)/len(set_nz_users)), end="\r")
         # randomly select a subset of ratings
         row, col = ratings[:, user].nonzero()
         selects = np.random.choice(row, size=int(len(row) * p_test))
@@ -180,7 +189,7 @@ def compute_error(data, user_features, item_features, nz):
 
 
 def ALS(train, test=None, lambda_user=0.1, lambda_item=0.7,
-        num_features=40, max_steps=20):
+        num_features=40, max_steps=30):
     """Alternating Least Squares (ALS) algorithm."""
     # define parameters
     stop_criterion = 1e-4
@@ -234,7 +243,7 @@ def ALS(train, test=None, lambda_user=0.1, lambda_item=0.7,
         print("CONVERGENCE TOO SLOW, INTERRUPTED")
 
     # if necessary, evaluate the test error
-    rmse=None
+    rmse = None
     if test is not None:
         nnz_row, nnz_col = test.nonzero()
         nnz_test = list(zip(nnz_row, nnz_col))

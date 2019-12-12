@@ -5,6 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from plotly.graph_objs import Scene, XAxis, YAxis, ZAxis, Layout
 import plotly.graph_objects as go
+try:
+    from .helpers import deserialize_costs
+except (ModuleNotFoundError, ImportError):
+    from helpers import deserialize_costs
 
 def plot_raw_data(ratings):
     """plot the statistics result on raw rating data."""
@@ -63,7 +67,9 @@ def plot_train_test_data(train, test):
     plt.show()
 
 
-def plot_opti_lambdas(costs):
+def plot_opti_lambdas(path):
+    costs = deserialize_costs(path)
+    print("Loaded {} cached hyperparameters combinations".format(len(costs)))
     ucosts, icosts = list(zip(*costs))
     z = list(costs.values())
     (min_ulambda, min_ilambda,), min_cost = min(

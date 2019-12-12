@@ -8,12 +8,14 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .helpers import ALS, load_data, split_data
+    from .helpers import ALS, load_data, split_data, deserialize_costs
+    from .optimizer import get_best_params, optimizer
 except (ModuleNotFoundError, ImportError):
-    from helpers import ALS, load_data, split_data
+    from helpers import ALS, load_data, split_data, deserialize_costs
+    from optimizer import get_best_params, optimizer
 
 
-def main(path_dataset, format_path, min_num_costs=130):
+def main(path_dataset, format_path):
     """Trains ALS and returns predictions.
 
     Loads dataset from `path_dataset`, performs ALS and predicts entries
@@ -46,33 +48,7 @@ def main(path_dataset, format_path, min_num_costs=130):
         return pd.DataFrame([])
 
     print("Spliting train/test")
-    train, test = split_data(ratings,
-                             p_test=0.1)
-
-    # load pre-saved costs
-    print("Trying to retrieve cached lambdas optimization")
-    costs_filename = CURRENT_DIR+"/cache/als_costs.pkl"
-    try:
-        with open(costs_filename, "rb") as f:
-            print("Successfully retrieved cached lambdas optimization")
-            costs = pkl.load(f)
-    except FileNotFoundError:
-        print("Unable to retrieve cached lambdas " +
-              "optimization, starting from scratch")
-        costs = {}
-    # if necessary, compute some more
-    while len(costs) < min_num_costs:
-        print("Not enough samples ({}/{}), computing..."
-              .format(len(costs), min_num_costs))
-        u = np.random.sample()
-        i = np.random.sample()
-        if (u, i) not in costs:
-            _, _, c = ALS(train, test, u, i)
-            costs[(u, i)] = c
-            with open(costs_filename, "wb") as f:
-                pkl.dump(costs, f)
-        else:
-            print("Parameters {}/{} already computed, skipping".format(u, i))
+    train, test = split_data(ratings, p_test=0.1)
 
     # try to retrieve best matrix factorization
     print("Trying to retrieve cached optimal matrix factorization")
@@ -85,8 +61,10 @@ def main(path_dataset, format_path, min_num_costs=130):
         # if failed, recompute and cache
         print("Unable to retrieve cached optimal matrix "
               "factorization, computing")
-        (min_ulambda, min_ilambda,), _ = min(costs.items(), key=lambda x: x[1])
-        factorized = ALS(train, min_ulambda, min_ilambda, 40)
+        min_ulambda, min_ilambda = get_best_params()
+        if min_ilambda is None or min_ilambda is None:
+            min_ulambda, min_ilambda = optimizer(150, train, test)
+        factorized, _ = ALS(train, min_ulambda, min_ilambda, 60)
         with open(factorized_filename, "wb") as f:
             print("Caching optimal matrix factorization")
             factorized = pkl.dump(factorized, f)
@@ -101,16 +79,13 @@ def main(path_dataset, format_path, min_num_costs=130):
         item_info = ifeats[:, row]
         user_info = ufeats[:, col]
         r = user_info.T.dot(item_info)
-        ret.append("r{}_c{},{}".format(row+1,
-                                       col+1,
-                                       int(np.clip(np.round(r), 1, 5))))
+        ret.append(("r{}_c{}".format(row+1, col+1),
+                    int(np.clip(np.round(r), 1, 5))))
         i += 1
-    print(ret[0])
     return pd.DataFrame(ret, columns=["Id", "Prediction"])
 
 
 if __name__ == "__main__":
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
     main(CURRENT_DIR+"/../data/data_train.csv",
-         CURRENT_DIR+"/../data/sampleSubmission.csv",
-         150)
+         CURRENT_DIR+"/../data/sampleSubmission.csv")
