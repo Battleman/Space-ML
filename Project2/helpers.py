@@ -59,7 +59,7 @@ def vote(voting_f):
     predictions = predictions[:, 1]  # list(all ratings for one model)
 
     # adding the NN prediction to the list of predictions
-    predictions = np.vstack(predictions, NN.main(training_path, format_path).to_numpy()[:, 1]
+    predictions = np.vstack(predictions, NN.main(training_path, format_path).to_numpy()[:, 1])
     # adding all credible Kmeans predictions
     for k in [2, 3, 6, 7]:
         predictions=np.vstack((predictions, Kmeans.main(
