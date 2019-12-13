@@ -2,7 +2,6 @@
 import numpy as np
 import pandas as pd
 import sys
-from scipy import stats
 # importing the models
 import Kmeans
 import NN
@@ -50,25 +49,23 @@ def vote(voting_f):
     Returns:
         np.array: The aggregated prediction
     """
-    # useful constants
-    submission_path = 'submission.csv'
+    #useful constants
+    submission_path='submission.csv'
     training_path = "data/data_train.csv"
     format_path = "data/sampleSubmission.csv"
-    # initializing 'predictions' and 'labels' using the ALS prediction
-    predictions = ALS.main(training_path, format_path).to_numpy()
-    labels = predictions[:, 0]  # list("r34_c3")
-    predictions = predictions[:, 1]  # list(all ratings for one model)
-
-    # adding the NN prediction to the list of predictions
-    predictions = np.vstack((predictions,
-                            NN.main(training_path, format_path)
-                            .to_numpy()[:, 1]))
-    # adding all credible Kmeans predictions
-    for k in [2, 3, 6, 7]:
-        predictions = np.vstack((predictions, Kmeans.main(
-            training_path, format_path, k).to_numpy()[:, 1]))
-    # finding the best prediction though the voting function
-    pred = pd.DataFrame(np.vstack((labels, voting_f(predictions))).T)
-    pred = pred.rename(columns={0: 'Id', 1: 'Prediction'})
-    # exporting the final prediction using the submission path
-    pred.to_csv(submission_path)
+    #computing the prediction of the ALS algorithm
+    predictions=ALS.main(training_path, format_path)
+    #computing multiple predictions of the kmeans algorithm
+    for k in [3,6,7]:
+        predictions=predictions.merge(Kmeans.main(training_path, format_path, k),on='Id')
+    #computing the prediction of the NN algorithm
+    predictions=predictions.merge(NN.main(training_path, format_path),on='Id')
+    #setting 'Id' as the index of the aggregation of predictions
+    predictions=predictions.set_index('Id')
+    #finding the best prediction through the voting function
+    Print('Voting...')
+    predictions['Prediction']=median_vote(predictions.T)
+    #exporting the final prediction using the submission path
+    Print('Exporting the final prediction...')
+    predictions[['Prediction']].to_csv(submission_path)
+    Print('Done!')
