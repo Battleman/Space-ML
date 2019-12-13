@@ -7,6 +7,7 @@ from sklearn.model_selection import train_test_split
 import keras
 from keras.models import Model
 
+
 def preprocessing(path):
     """ Loads dataset from path and preprocesses it for NN training.
 
@@ -20,8 +21,10 @@ def preprocessing(path):
     # Loading the training data
     data = pd.read_csv(path)
     # Transform data into 2 vectors UserID and MovieId
-    data['userId'] = data['Id'].apply(lambda x: x.split('_')[0][1:]).astype('int')
-    data['movieId'] = data['Id'].apply(lambda x: x.split('_')[1][1:]).astype('int')
+    data['userId'] = data['Id'].apply(
+        lambda x: x.split('_')[0][1:]).astype('int')
+    data['movieId'] = data['Id'].apply(
+        lambda x: x.split('_')[1][1:]).astype('int')
     data.drop('Id', axis=1, inplace=True)
 
     # Calculate the number of unique users and movies in the dataset
@@ -33,12 +36,14 @@ def preprocessing(path):
     y = data['Prediction'].values
 
     # Splits data into 90% training and 10% testing set
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.1, random_state=42)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.1, random_state=42)
 
     X_train_array = [X_train[:, 0], X_train[:, 1]]
     X_test_array = [X_test[:, 0], X_test[:, 1]]
 
     return X_train_array, y_train, X_test_array, y_test, n_users, n_movies
+
 
 def get_uniquevalues(data):
     """ Calculates the number of unique users and movies in the dataset
@@ -52,8 +57,9 @@ def get_uniquevalues(data):
 
     return n_users, n_movies
 
+
 def predict(model, path):
-    """Returns predictions of the trained NN model.
+    """Return predictions of the trained NN model.
 
     Loads the data given to predict from `path`, runs the trained NN `model`
     on this data and finally output the ratings predictions.
@@ -61,15 +67,17 @@ def predict(model, path):
     Args:
         model: The trained NN model
         path: Path to the data given for prediction
-        
+
     Returns:
-        list -- List of predictions, tuples of format ("id", rating)
+        pandas dataframe -- dataframe of ids and corresponding ratings
     """
     # Loading the sample submission data
     sample_sumbission = pd.read_csv(path)
     # Transforming data to have the correct format for the NN
-    sample_sumbission['userId'] = sample_sumbission['Id'].apply(lambda x: x.split('_')[0][1:]).astype('int')
-    sample_sumbission['movieId'] = sample_sumbission['Id'].apply(lambda x: x.split('_')[1][1:]).astype('int')
+    sample_sumbission['userId'] = sample_sumbission['Id'].apply(
+        lambda x: x.split('_')[0][1:]).astype('int')
+    sample_sumbission['movieId'] = sample_sumbission['Id'].apply(
+        lambda x: x.split('_')[1][1:]).astype('int')
     sample_sumbission.drop('Id', axis=1, inplace=True)
 
     # Get the desired data for prediction
