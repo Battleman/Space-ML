@@ -82,6 +82,7 @@ def main(path_dataset, format_path):
         ret.append(("r{}_c{}".format(row+1, col+1),
                     int(np.clip(np.round(r), 1, 5))))
         i += 1
+    print("")
     return pd.DataFrame(ret, columns=["Id", "Prediction"])
 
 

@@ -6,4 +6,7 @@ Provides an easy way to compute optimal ALS."""
 # -*- coding: utf-8 -*-
 # File ALS/main.py
 
-from .main import main
+try:
+    from .main import main
+except (ModuleNotFoundError, ImportError):
+    from main import main
