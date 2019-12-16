@@ -8,14 +8,14 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .helpers import ALS, load_data, split_data, deserialize_costs
+    from .helpers import ALS, load_data, split_data
     from .optimizer import get_best_params, optimizer
 except (ModuleNotFoundError, ImportError):
-    from helpers import ALS, load_data, split_data, deserialize_costs
+    from helpers import ALS, load_data, split_data
     from optimizer import get_best_params, optimizer
 
 
-def main(path_dataset, format_path):
+def main(path_dataset, format_path, rounded=True):
     """Trains ALS and returns predictions.
 
     Loads dataset from `path_dataset`, performs ALS and predicts entries
@@ -47,9 +47,6 @@ def main(path_dataset, format_path):
               "please double check")
         return pd.DataFrame([])
 
-    print("Spliting train/test")
-    train, test = split_data(ratings, p_test=0.1)
-
     # try to retrieve best matrix factorization
     print("Trying to retrieve cached optimal matrix factorization")
     factorized_filename = CURRENT_DIR+"/cache/factorized.pkl"
@@ -63,11 +60,14 @@ def main(path_dataset, format_path):
               "factorization, computing")
         min_ulambda, min_ilambda = get_best_params()
         if min_ilambda is None or min_ilambda is None:
+            print("Spliting train/test")
+            train, test = split_data(ratings, p_test=0.1)
             min_ulambda, min_ilambda = optimizer(150, train, test)
-        factorized, _ = ALS(train, min_ulambda, min_ilambda, 60)
+        factorized, _ = ALS(ratings, lambda_user=min_ulambda,
+                            lambda_item=min_ilambda, max_steps=100)
         with open(factorized_filename, "wb") as f:
             print("Caching optimal matrix factorization")
-            factorized = pkl.dump(factorized, f)
+            pkl.dump(factorized, f)
     ufeats, ifeats = factorized
 
     nnz_row, nnz_col = final.nonzero()
@@ -80,7 +80,7 @@ def main(path_dataset, format_path):
         user_info = ufeats[:, col]
         r = user_info.T.dot(item_info)
         ret.append(("r{}_c{}".format(row+1, col+1),
-                    int(np.clip(np.round(r), 1, 5))))
+                    (int(np.clip(np.round(r), 1, 5)) if rounded else r)))
         i += 1
     print("")
     return pd.DataFrame(ret, columns=["Id", "Prediction"])
@@ -88,5 +88,6 @@ def main(path_dataset, format_path):
 
 if __name__ == "__main__":
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-    main(CURRENT_DIR+"/../data/data_train.csv",
-         CURRENT_DIR+"/../data/sampleSubmission.csv")
+    df = main(CURRENT_DIR+"/../data/data_train.csv",
+              CURRENT_DIR+"/../data/sampleSubmission.csv")
+    df.to_csv(CURRENT_DIR+"/cache/submissionALS.csv", index=False)

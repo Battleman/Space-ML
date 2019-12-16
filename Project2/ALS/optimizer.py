@@ -69,8 +69,7 @@ def get_best_params():
     costs = deserialize_costs(costs_filename)
     if len(costs) == 0:
         return (None, None)
-    best_param = min(costs, key=lambda x: costs[x])
-    return best_parama
+    return min(costs, key=lambda x: costs[x])
 
 
 if __name__ == "__main__":
