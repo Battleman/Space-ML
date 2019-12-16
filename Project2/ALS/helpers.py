@@ -211,8 +211,10 @@ def ALS(train, test=None, lambda_user=0.1, lambda_item=0.7,
         train)
 
     # run ALS
-    print("Using lambda_user={:.5f}, lambda_item={:.5f}\n"
-          "start the ALS algorithm...".format(lambda_user, lambda_item))
+    print("Using lambda_user={:.5f}, lambda_item={:.5f} and {} features\n"
+          "start the ALS algorithm...".format(lambda_user,
+                                              lambda_item,
+                                              num_features))
     step = 0
     while step < max_steps:
         if change < stop_criterion:

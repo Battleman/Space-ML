@@ -9,13 +9,13 @@ import pandas as pd
 
 try:
     from .helpers import ALS, load_data, split_data
-    from .optimizer import get_best_params, optimizer
+    from .optimizer import get_best_lambdas, optimizer_lambdas
 except (ModuleNotFoundError, ImportError):
     from helpers import ALS, load_data, split_data
-    from optimizer import get_best_params, optimizer
+    from optimizer import get_best_lambdas, optimizer_lambdas
 
 
-def main(path_dataset, format_path, rounded=True):
+def main(path_dataset, format_path, rounded=True, num_features=40):
     """Trains ALS and returns predictions.
 
     Loads dataset from `path_dataset`, performs ALS and predicts entries
@@ -58,13 +58,16 @@ def main(path_dataset, format_path, rounded=True):
         # if failed, recompute and cache
         print("Unable to retrieve cached optimal matrix "
               "factorization, computing")
-        min_ulambda, min_ilambda = get_best_params()
+        min_ulambda, min_ilambda = get_best_lambdas(num_features)
         if min_ilambda is None or min_ilambda is None:
             print("Spliting train/test")
             train, test = split_data(ratings, p_test=0.1)
-            min_ulambda, min_ilambda = optimizer(150, train, test)
-        factorized, _ = ALS(ratings, lambda_user=min_ulambda,
-                            lambda_item=min_ilambda, max_steps=100)
+            min_ulambda, min_ilambda = optimizer_lambdas(150, train, test)
+        factorized, _ = ALS(ratings,
+                            lambda_user=min_ulambda,
+                            lambda_item=min_ilambda,
+                            max_steps=100,
+                            num_features=num_features)
         with open(factorized_filename, "wb") as f:
             print("Caching optimal matrix factorization")
             pkl.dump(factorized, f)
