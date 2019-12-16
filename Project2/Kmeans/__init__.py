@@ -27,12 +27,8 @@ def main(input_path, format_path, k):
     #kmeans
     print('Kmeans for k=',k,':')
     assignments, mu, _=kmeans(data, k, max_iters, threshold)
-    #generating a prediction using the clusters of similar users
-    mu_rounded=np.round(mu)
-    for i in range(k):
-        data[assignments==i] = np.where(np.isnan(data[assignments==i]),
-                                        mu_rounded[i],
-                                        data[assignments==i])
+    #generating a prediction using the cluster of similar users
+    data=cluster_agg(assignments, mu, k, data)
     #postprocessing
     data=postprocessing(data, format_path)
     return data

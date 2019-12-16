@@ -76,3 +76,25 @@ def kmeans(data, k, max_iters, threshold):
         #update k-means information.
         mu_old = mu
     return assignments, mu, average_loss
+
+def cluster_agg(assignments, mu,k,data):
+    """Generates a prediction by replacing the unknown ratings by the corresponding cluster rating.
+       More precisely, if user i has for cluster j, it's unknown ratings are replaced by the ones of the corresponding
+       cluster core.
+
+    Args:
+        assignments: At index i, the index of the cluster corresponding to user i
+        mu: The list of clusters cores
+        k: The amount of clusters
+        data: The incomplete rating matrix
+        
+    Returns:
+        np.array: The predicted rating matrix
+    """
+    #Rounding the cluster values to get valid ratings
+    mu_rounded=np.round(mu)
+    #Computing the resulting rating matrix
+    prediction=data.copy()
+    for j in range(k):
+        prediction[assignments==j]=np.where(np.isnan(prediction[assignments==j]),mu_rounded[j],prediction[assignments==j])   
+    return prediction
