@@ -11,7 +11,7 @@ import numpy as np
 import pickle as pkl
 
 
-def optimizer(min_num_costs, train, test, close_to_best=False):
+def optimizer_lambdas(min_num_costs, train, test, close_to_best=False, num_features=40):
     """Optimize the regularization hyperparameters
 
     Arguments:
@@ -26,16 +26,19 @@ def optimizer(min_num_costs, train, test, close_to_best=False):
 
     """
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-    costs_filename = CURRENT_DIR+"/cache/als_costs.pkl"
+    costs_filename = CURRENT_DIR+"/cache/als_costs_{}.pkl".format(num_features)
     costs = deserialize_costs(costs_filename)
     while len(costs) < min_num_costs:
         print("Not enough samples ({}/{}), computing..."
               .format(len(costs), min_num_costs))
-        best_param = min(costs, key=lambda x: costs[x])
+        best_params = (0,0)
+        if len(costs) > 0:
+            best_param = min(costs, key=lambda x: costs[x])
+
         while True:
             # looking for suitable parameters
-            u = np.random.sample()
-            i = np.random.sample()
+            u = np.random.random_sample()
+            i = np.random.random_sample()
             if close_to_best:
                 # only keep points close to current best point
                 dist_to_best = np.linalg.norm(
@@ -55,27 +58,25 @@ def optimizer(min_num_costs, train, test, close_to_best=False):
             else:
                 print("Point too far from current best, keep searching...",
                       end="\r")
-        _, _, c = ALS(train, test, u, i, 40)
+        _, _, c = ALS(train, test, u, i, num_features=num_features)
         costs[(u, i)] = c
         with open(costs_filename, "wb") as f:
             pkl.dump(costs, f)
-    return get_best_params()
+    return get_best_lambdas(num_features)
 
-
-def get_best_params():
+def get_best_lambdas(num_features):
     """Return the best paramters."""
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-    costs_filename = CURRENT_DIR+"/cache/als_costs.pkl"
+    costs_filename = CURRENT_DIR+"/cache/als_costs_{}.pkl".format(num_features)
     costs = deserialize_costs(costs_filename)
     if len(costs) == 0:
         return (None, None)
-    best_param = min(costs, key=lambda x: costs[x])
-    return best_parama
+    return min(costs, key=lambda x: costs[x])
 
 
 if __name__ == "__main__":
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
     path_dataset = CURRENT_DIR+"/../data/data_train.csv"
     ratings = load_data(path_dataset)
-    train, test = split_data(ratings, p_test=0.1)
-    optimizer(int(sys.argv[1]), train, test, close_to_best=True)
+    tr, te = split_data(ratings, p_test=0.1)
+    optimizer_lambdas(int(sys.argv[1]), tr, te, close_to_best=True)
