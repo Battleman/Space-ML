@@ -2,20 +2,17 @@
 import pandas as pd
 import re
 
-def preprocessing(path):
+def preprocessing(data):
     """Preprocesses the data.
 
-    More precisely, loads a table of format 'ri_cj|rating' at the given path 
-    and turns it into a table of format 'Row vs Col: Ratings'.
+    More precisely, turns a table of format 'ri_cj|rating' into a table of format 'Row vs Col: Ratings'.
 
     Args:
-        path: Path to the data
+        data: The samples
         
     Returns:
         np.array: The 'Row vs Col' rating matrix
     """
-    #loading the training data
-    data=pd.read_csv(path)
     #extracting row and column numbers
     data['Id']=data['Id'].apply(lambda x: re.findall(r'\d+', str(x)))
     #turn 'Row' and 'Col' values into features
@@ -26,7 +23,7 @@ def preprocessing(path):
     data=data.pivot(index='Row', columns='Col', values='Prediction')
     return data
 
-def postprocessing(classified, format_path):
+def postprocessing(classified, format_):
     """Postprocesses the data.
 
     More precisely, turns the given table of format 'Row vs Col: Ratings' into a table of format 'ri_cj|rating',
@@ -34,7 +31,7 @@ def postprocessing(classified, format_path):
 
     Args:
         classified: The 'Row vs Col: Ratings' matrix
-        format_path: Path to the model output (used to rename the columns and filter-out unwanted entries)
+        format_: Model output format (used to rename the columns and filter-out unwanted entries)
         
     Returns:
         np.array: The 'ri_cj|rating' table
@@ -44,7 +41,6 @@ def postprocessing(classified, format_path):
     #converting 'Row' and 'Col' values into an id
     classified.index='r'+classified['Row']+'_c'+classified['Col']
     classified=classified.drop(columns=['Row','Col'])
-    #loading the sample submission data to identify the subsample of the prediction we desire
-    sample_sumbission=pd.read_csv(format_path)
-    classified=classified[classified.index.isin(list(sample_sumbission['Id']))].reset_index().rename(columns={'index': 'Id', 'Rating':'Prediction'})
+    #using format_ to identify the subsample of predictions we desire
+    classified=classified[classified.index.isin(list(format_['Id']))].reset_index().rename(columns={'index': 'Id', 'Rating':'Prediction'})
     return classified

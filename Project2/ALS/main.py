@@ -8,25 +8,24 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .helpers import ALS, load_data, split_data, deserialize_costs
+    from .helpers import ALS, preprocess_data, split_data, deserialize_costs
     from .optimizer import get_best_params, optimizer
 except (ModuleNotFoundError, ImportError):
     from helpers import ALS, load_data, split_data, deserialize_costs
     from optimizer import get_best_params, optimizer
 
 
-def main(path_dataset, format_path):
+def main(input_, format_):
     """Trains ALS and returns predictions.
 
-    Loads dataset from `path_dataset`, performs ALS and predicts entries
-    from `format_path`.
+    Performs ALS and predicts entries of 'format_'.
 
     To find optimal hyperparameters, samples the space of hyperparameters
     at least `min_num_costs` times and takes the best set of parameters.
 
     Arguments:
-        path_dataset {str} -- Path (relative or absolute) to training dataset
-        format_path {str} -- Path to entries for which emitting predictions.
+        input_ -- Training dataset
+        format_ -- Entries for which emitting predictions.
 
     Keyword Arguments:
         min_num_costs {int} -- Min num of samples from hyperparameters
@@ -36,16 +35,11 @@ def main(path_dataset, format_path):
         list -- List of predictions, tuples of format ("id", rating)
 
     """
+    # preprocess data
+    ratings=preprocess_data(input_)
+    final=preprocess_data(format_)
     # load data and split
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-    print("Loading datasets")
-    try:
-        ratings = load_data(path_dataset)
-        final = load_data(format_path)
-    except FileNotFoundError:
-        print("Impossible to load training or format files, "
-              "please double check")
-        return pd.DataFrame([])
 
     print("Spliting train/test")
     train, test = split_data(ratings, p_test=0.1)
