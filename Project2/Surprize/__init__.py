@@ -7,6 +7,7 @@ Provides an easy way to compute ensemble methods with the Surprize library."""
 # File ALS/main.py
 
 try:
-    from .main import main, tester
+    from .main import main
 except (ModuleNotFoundError, ImportError):
-    from main import main, tester
+    from main import main
+
