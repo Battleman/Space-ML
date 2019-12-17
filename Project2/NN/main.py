@@ -3,10 +3,10 @@ import os
 
 try:
     from .processing import preprocessing, predict
-    from .NNmodel import RecommenderNet
+    from .NNmodel import *
 except (ModuleNotFoundError, ImportError):
     from processing import preprocessing, predict
-    from NNmodel import RecommenderNet
+    from NNmodel import *
 
 
 def main(input_, format_):
