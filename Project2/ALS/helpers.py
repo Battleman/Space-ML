@@ -6,6 +6,8 @@ from itertools import groupby
 import numpy as np
 import scipy.sparse as sp
 import pickle as pkl
+import re
+import pandas as pd
 
 
 def load_data(path_dataset):
@@ -14,6 +16,25 @@ def load_data(path_dataset):
         data = f.read().splitlines()[1:]
     return _preprocess_data(data)
 
+def preprocess_data(data):
+    """Preprocesses the data.
+
+    Args:
+    data: The samples
+
+    Returns:
+    np.array: The 'Row vs Col' rating matrix
+    """
+    #extracting row and column numbers
+    data['Id']=data['Id'].apply(lambda x: re.findall(r'\d+', str(x)))
+    #turn 'Row' and 'Col' values into features
+    data[['Row', 'Col']]=pd.DataFrame(data.Id.values.tolist(), index= data.index)
+    #dropping useless features
+    data=data.drop(columns='Id')
+    #pivotting the table to get the desired matrix
+    data=data.pivot(index='Row', columns='Col', values='Prediction')
+    data[np.isnan(data)]=0
+    return sp.lil_matrix(data)
 
 def _preprocess_data(data):
     """Preprocessing the text data, conversion to numerical array format."""

@@ -8,18 +8,16 @@ import keras
 from keras.models import Model
 
 
-def preprocessing(path):
-    """ Loads dataset from path and preprocesses it for NN training.
+def preprocessing(data):
+    """ Preprocesses the data used for the NN training.
 
     This also splits the data into a training set and a testing set
     to perform a cross validation during the NN training.
 
     Args:
-        path: Path to the data
+        data: The samples
 
     """
-    # Loading the training data
-    data = pd.read_csv(path)
     # Transform data into 2 vectors UserID and MovieId
     data['userId'] = data['Id'].apply(
         lambda x: x.split('_')[0][1:]).astype('int')
@@ -58,30 +56,28 @@ def get_uniquevalues(data):
     return n_users, n_movies
 
 
-def predict(model, path):
-    """Return predictions of the trained NN model.
+def predict(model, format_):
+    """Returns predictions of the trained NN model.
 
-    Loads the data given to predict from `path`, runs the trained NN `model`
-    on this data and finally output the ratings predictions.
+    Runs the trained NN `model` on the data given to predict and
+    finally output the ratings predictions.
 
     Args:
         model: The trained NN model
-        path: Path to the data given for prediction
+        format_: The data given for prediction
 
     Returns:
         pandas dataframe -- dataframe of ids and corresponding ratings
     """
-    # Loading the sample submission data
-    sample_sumbission = pd.read_csv(path)
     # Transforming data to have the correct format for the NN
-    sample_sumbission['userId'] = sample_sumbission['Id'].apply(
+    format_['userId'] = format_['Id'].apply(
         lambda x: x.split('_')[0][1:]).astype('int')
-    sample_sumbission['movieId'] = sample_sumbission['Id'].apply(
+    format_['movieId'] = format_['Id'].apply(
         lambda x: x.split('_')[1][1:]).astype('int')
-    sample_sumbission.drop('Id', axis=1, inplace=True)
+    format_.drop('Id', axis=1, inplace=True)
 
     # Get the desired data for prediction
-    X_p = sample_sumbission[['userId', 'movieId']].values
+    X_p = format_[['userId', 'movieId']].values
     X_pred = [X_p[:, 0], X_p[:, 1]]
 
     # Predict the ratings using the trained NN
@@ -90,13 +86,13 @@ def predict(model, path):
     rounded = [round(x[0]) for x in predictions]
 
     # Transform the data into the desired format
-    sample_sumbission['Prediction'] = rounded
-    sample_sumbission['Id'] = 'r' + sample_sumbission['userId'].astype('str') + '_c' + sample_sumbission[
+    format_['Prediction'] = rounded
+    format_['Id'] = 'r' + format_['userId'].astype('str') + '_c' + format_[
         'movieId'].astype('str')
-    sample_sumbission.drop(columns=["userId", "movieId"], inplace=True)
+    format_.drop(columns=["userId", "movieId"], inplace=True)
     columnsTitles = ["Id", "Prediction"]
-    sample_sumbission = sample_sumbission.reindex(columns=columnsTitles)
+    format_ = format_.reindex(columns=columnsTitles)
     # Safety check
-    sample_sumbission = sample_sumbission.replace(6, 5)
+    format_ = format_.replace(6, 5)
 
-    return sample_sumbission
+    return format_

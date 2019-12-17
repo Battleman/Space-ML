@@ -53,19 +53,28 @@ def vote(voting_f):
     submission_path='submission.csv'
     training_path = "data/data_train.csv"
     format_path = "data/sampleSubmission.csv"
+    #Loading the data
+    print("Loading datasets")
+    try:
+        input_ = pd.read_csv(training_path)
+        format_ = pd.read_csv(format_path)
+    except FileNotFoundError:
+        print("Impossible to load training or format files, "
+              "please double check")
+        return pd.DataFrame([])
     #computing the prediction of the ALS algorithm
-    predictions=ALS.main(training_path, format_path)
+    predictions=ALS.main(input_.copy(), format_.copy())
     #computing multiple predictions of the kmeans algorithm
-    for k in [3,6,7]:
-        predictions=predictions.merge(Kmeans.main(training_path, format_path, k),on='Id')
+    for k in [5,6,7]:
+        predictions=predictions.merge(Kmeans.main(input_.copy(), format_.copy(), k),on='Id')
     #computing the prediction of the NN algorithm
-    predictions=predictions.merge(NN.main(training_path, format_path),on='Id')
+    predictions=predictions.merge(NN.main(input_.copy(), format_.copy()),on='Id')
     #setting 'Id' as the index of the aggregation of predictions
-    predictions=predictions.set_index('Id')
+    predictions.set_index('Id', inplace=True)
     #finding the best prediction through the voting function
-    Print('Voting...')
-    predictions['Prediction']=median_vote(predictions.T)
+    print('Voting...')
+    predictions['Prediction']=voting_f(predictions.T)
     #exporting the final prediction using the submission path
-    Print('Exporting the final prediction...')
+    print('Exporting the final prediction...')
     predictions[['Prediction']].to_csv(submission_path)
-    Print('Done!')
+    print('Done!')

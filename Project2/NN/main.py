@@ -9,22 +9,21 @@ except (ModuleNotFoundError, ImportError):
     from NNmodel import RecommenderNet
 
 
-def main(input_path, format_path):
+def main(input_, format_):
     """Predicts the Netflix ratings using a Neural Network model
 
     More precisely, it preprocesses the data to make it compatible with the
     NN model then finally postprocesses the result to give predictions the desired format.
 
     Args:
-        input_path: Path to the samples
-        format_path: Path to the submission format file
+        input_: The samples
+        format_: The submission format file
 
     Returns:
         np.array: The predictions of the ratings
     """
     # preprocessing
-    X_train_array, y_train, X_test_array, y_test, n_users, n_movies = preprocessing(
-        input_path)
+    X_train_array, y_train, X_test_array, y_test, n_users, n_movies = preprocessing(input_)
 
     # Build the NN model and train it
     n_factors = 4
@@ -34,7 +33,7 @@ def main(input_path, format_path):
 
     # generating the predictions
     print("Generating predictions")
-    predictions = predict(model, format_path)
+    predictions = predict(model, format_)
 
     return predictions
 
