@@ -122,7 +122,7 @@ def create_3cols(orig_filename, name):
 
 
 def preprocess_df(data):
-    data.loc['Id'] = data['Id'].apply(lambda x: re.findall(r'\d+', str(x)))
+    data.loc[:, 'Id'] = data.loc[:, 'Id'].apply(lambda x: re.findall(r'\d+', str(x)))
     # turn 'Row' and 'Col' values into features
     data[['Row', 'Col']] = pd.DataFrame(
         data.Id.values.tolist(), index=data.index)
