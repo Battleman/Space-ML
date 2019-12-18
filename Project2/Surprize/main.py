@@ -8,6 +8,8 @@ from multiprocessing import Pool
 from multiprocessing.dummy import Pool as ThreadPool
 import time
 import re
+import sys
+
 try:
     from .helpers import compute_error, split_data, load_data
 except ImportError:
@@ -122,7 +124,8 @@ def create_3cols(orig_filename, name):
 
 
 def preprocess_df(data):
-    data.loc[:, 'Id'] = data.loc[:, 'Id'].apply(lambda x: re.findall(r'\d+', str(x)))
+    data.loc[:, 'Id'] = data.loc[:, 'Id'].apply(
+        lambda x: re.findall(r'\d+', str(x)))
     # turn 'Row' and 'Col' values into features
     data[['Row', 'Col']] = pd.DataFrame(
         data.Id.values.tolist(), index=data.index)
@@ -131,22 +134,26 @@ def preprocess_df(data):
     return data
 
 
-def main(train_df, pred_df, cache_name="test"):
+def main(train_df, target_df, cache_name="test"):
     global algo_in_use
     CACHED_DF_FILENAME = os.path.dirname(
         os.path.abspath(__file__)) +\
         "/cache/cached_predictions_{}.pkl".format(cache_name)
     train_df = preprocess_df(train_df)
     trainset = pandas_to_data(train_df)
-    ids_to_predict = pred_df["Id"].to_list()
+    ids_to_predict = target_df["Id"].to_list()
 
     # try to retrieve backup dataframe
     try:
-        predict_df = pd.read_pickle(CACHED_DF_FILENAME)
-    except FileNotFoundError:
-        print("No cached predictions found")
-        predict_df = pd.DataFrame(ids_to_predict, columns=["Id"])
-        predict_df.set_index("Id", inplace=True)
+        print("Retrieving cached predictions")
+        all_algos_preds_df = pd.read_pickle(CACHED_DF_FILENAME)
+        print("Ensuring cached IDs match given IDs")
+        assert sorted(ids_to_predict) = sorted(all_algos_preds_df.index.values)
+        print("Indices match, continuing")
+    except (FileNotFoundError, AssertionError):
+        print("No valid cached predictions found")
+        all_algos_preds_df = pd.DataFrame(ids_to_predict, columns=["Id"])
+        all_algos_preds_df.set_index("Id", inplace=True)
 
     all_algos = {"SVD": spr.SVD(),
                  "Baseline": spr.BaselineOnly(),
@@ -160,7 +167,7 @@ def main(train_df, pred_df, cache_name="test"):
 
     for name in all_algos:
         print("##### {} ####".format(name))
-        if name in predict_df.columns:
+        if name in all_algos_preds_df.columns:
             print("Already computed {}, skipping".format(name))
             continue
         algo = all_algos[name]
@@ -171,10 +178,10 @@ def main(train_df, pred_df, cache_name="test"):
         print("Generating predictions...")
         predictions = parallelize_predictions(ids_to_predict, 80)
         print("Done. Merging with previous results")
-        pred_df = pd.DataFrame(predictions, columns=["Id", name])
-        pred_df.set_index("Id", inplace=True)
-        predict_df = pd.merge(predict_df, pred_df,
+        this_algo_preds_df = pd.DataFrame(predictions, columns=["Id", name])
+        this_algo_preds_df.set_index("Id", inplace=True)
+        all_algos_preds_df = pd.merge(all_algos_preds_df, this_algo_preds_df,
                               left_index=True, right_index=True)
-        predict_df.to_pickle(CACHED_DF_FILENAME)
-        print(predict_df.head())
-    return predict_df
+        all_algos_preds_df.to_pickle(CACHED_DF_FILENAME)
+    print("DONE computing surprize")
+    return all_algos_preds_df
