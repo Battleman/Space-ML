@@ -78,13 +78,11 @@ def predictor(ids_chunk):
     Returns:
         list -- list of (id, rating)
     """
-    print("Working on a chunk")
     res_chunk = []
     for i in ids_chunk:
         uid, iid = get_ids(i)
         p = algo_in_use.predict(uid, iid)
         res_chunk.append((i, p.est))
-    print("Finished chunk")
     return res_chunk
 
 
