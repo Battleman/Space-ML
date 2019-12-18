@@ -8,11 +8,12 @@ import numpy as np
 import pandas as pd
 
 try:
-    from .helpers import ALS, preprocess_data, split_data, deserialize_costs
+    from .helpers import ALS, preprocess_data, split_data
     from .optimizer import get_best_lambdas, optimizer_lambdas
 except (ModuleNotFoundError, ImportError):
-    from helpers import ALS, load_data, split_data
+    from helpers import ALS, preprocess_data, split_data
     from optimizer import get_best_lambdas, optimizer_lambdas
+
 
 def main(input_, format_, rounded=True, num_features=40):
     """Trains ALS and returns predictions.
@@ -35,8 +36,9 @@ def main(input_, format_, rounded=True, num_features=40):
 
     """
     # preprocess data
-    ratings=preprocess_data(input_)
-    final=preprocess_data(format_)
+    ratings = preprocess_data(input_)
+    final = preprocess_data(format_)
+
     # load data and split
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -66,6 +68,7 @@ def main(input_, format_, rounded=True, num_features=40):
             pkl.dump(factorized, f)
     ufeats, ifeats = factorized
 
+    # emitting predictions
     nnz_row, nnz_col = final.nonzero()
     nnz_final = list(zip(nnz_row, nnz_col))
     ret = []
@@ -81,6 +84,8 @@ def main(input_, format_, rounded=True, num_features=40):
     print("")
     ret_df = pd.DataFrame(ret, columns=["Id", "Prediction"])
     ret_df.set_index("Id", inplace=True)
+
+    assert sorted(format_['Id'].values) == sorted(ret_df.index.values)
     return ret_df
 
 
