@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # File ALS/main.py
 """Predict ratings using ALS."""
+import sys
 import os
 import pickle as pkl
 
@@ -15,7 +16,7 @@ except (ModuleNotFoundError, ImportError):
     from optimizer import get_best_lambdas, optimizer_lambdas
 
 
-def main(input_, format_, rounded=True, num_features=40):
+def main(input_, format_, rounded=False, num_features=40, cache_name="test"):
     """Trains ALS and returns predictions.
 
     Performs ALS and predicts entries of 'format_'.
@@ -36,15 +37,15 @@ def main(input_, format_, rounded=True, num_features=40):
 
     """
     # preprocess data
-    ratings = preprocess_data(input_)
-    final = preprocess_data(format_)
+    ratings = preprocess_data(input_.copy())
+    final = preprocess_data(format_.copy())
 
     # load data and split
     CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
     # try to retrieve best matrix factorization
     print("Trying to retrieve cached optimal matrix factorization")
-    factorized_filename = CURRENT_DIR+"/cache/factorized.pkl"
+    factorized_filename = CURRENT_DIR+"/cache/factorized_{}.pkl".format(cache_name)
     try:
         with open(factorized_filename, "rb") as f:
             print("Successfully retrieved cached optimal matrix factorization")
@@ -74,7 +75,9 @@ def main(input_, format_, rounded=True, num_features=40):
     ret = []
     i = 1
     for row, col in nnz_final:
-        print("Emitting predictions {}/{}".format(i, len(nnz_final)), end="\r")
+        if i % 100 == 0 or i == len(nnz_final):
+            print("Emitting predictions {}/{}".format(i, len(nnz_final)), end="\r")
+            sys.stdout.flush()
         item_info = ifeats[:, row]
         user_info = ufeats[:, col]
         r = user_info.T.dot(item_info)
@@ -84,7 +87,6 @@ def main(input_, format_, rounded=True, num_features=40):
     print("")
     ret_df = pd.DataFrame(ret, columns=["Id", "Prediction"])
     ret_df.set_index("Id", inplace=True)
-
     assert sorted(format_['Id'].values) == sorted(ret_df.index.values)
     return ret_df
 
