@@ -79,7 +79,9 @@ def main(input_, format_, rounded=True, num_features=40):
                     (int(np.clip(np.round(r), 1, 5)) if rounded else r)))
         i += 1
     print("")
-    return pd.DataFrame(ret, columns=["Id", "Prediction"])
+    ret_df = pd.DataFrame(ret, columns=["Id", "Prediction"])
+    ret_df.set_index("Id", inplace=True)
+    return ret_df
 
 
 if __name__ == "__main__":

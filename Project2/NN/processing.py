@@ -11,11 +11,11 @@ from keras.models import Model
 def preprocessing(data):
     """ Preprocesses the data used for the NN training.
 
-    This also splits the data into a training set and a testing set
-    to perform a cross validation during the NN training.
+    This transforms the data into 2 vectors one with userId values
+    and one with movieId values.
 
     Args:
-        data: The samples
+        data: The original training data
 
     """
     # Transform data into 2 vectors UserID and MovieId
@@ -34,13 +34,13 @@ def preprocessing(data):
     y = data['Prediction'].values
 
     # Splits data into 90% training and 10% testing set
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.1, random_state=42)
+    # X_train, X_test, y_train, y_test = train_test_split(
+    #    X, y, test_size=0.1, random_state=42)
 
-    X_train_array = [X_train[:, 0], X_train[:, 1]]
-    X_test_array = [X_test[:, 0], X_test[:, 1]]
+    X_all = [X[:, 0], X[:, 1]]
+    # X_test_array = [X_test[:, 0], X_test[:, 1]]
 
-    return X_train_array, y_train, X_test_array, y_test, n_users, n_movies
+    return X_all, y, n_users, n_movies
 
 
 def get_uniquevalues(data):
@@ -67,14 +67,14 @@ def predict(model, format_):
         format_: The data given for prediction
 
     Returns:
-        pandas dataframe -- dataframe of ids and corresponding ratings
+        pandas dataframe -- dataframe of ratings with their Ids as index
     """
     # Transforming data to have the correct format for the NN
     format_['userId'] = format_['Id'].apply(
         lambda x: x.split('_')[0][1:]).astype('int')
     format_['movieId'] = format_['Id'].apply(
         lambda x: x.split('_')[1][1:]).astype('int')
-    format_.drop('Id', axis=1, inplace=True)
+    format_.drop(columns=["Id","Prediction"], axis=1, inplace=True)
 
     # Get the desired data for prediction
     X_p = format_[['userId', 'movieId']].values
@@ -83,15 +83,14 @@ def predict(model, format_):
     # Predict the ratings using the trained NN
     predictions = model.predict(X_pred)
     # round predictions
-    rounded = [round(x[0]) for x in predictions]
+    rounded = [x[0] for x in predictions]
 
     # Transform the data into the desired format
-    format_['Prediction'] = rounded
+    format_['NN_Predictions'] = rounded
     format_['Id'] = 'r' + format_['userId'].astype('str') + '_c' + format_[
         'movieId'].astype('str')
     format_.drop(columns=["userId", "movieId"], inplace=True)
-    columnsTitles = ["Id", "Prediction"]
-    format_ = format_.reindex(columns=columnsTitles)
+    format_ = format_.set_index("Id")
     # Safety check
     format_ = format_.replace(6, 5)
 
