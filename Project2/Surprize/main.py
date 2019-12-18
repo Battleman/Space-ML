@@ -148,7 +148,7 @@ def main(train_df, target_df, cache_name="test"):
         print("Retrieving cached predictions")
         all_algos_preds_df = pd.read_pickle(CACHED_DF_FILENAME)
         print("Ensuring cached IDs match given IDs")
-        assert sorted(ids_to_predict) = sorted(all_algos_preds_df.index.values)
+        assert sorted(ids_to_predict) == sorted(all_algos_preds_df.index.values)
         print("Indices match, continuing")
     except (FileNotFoundError, AssertionError):
         print("No valid cached predictions found")
