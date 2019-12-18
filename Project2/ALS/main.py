@@ -85,7 +85,7 @@ def main(input_, format_, rounded=False, num_features=40, cache_name="test"):
                     (int(np.clip(np.round(r), 1, 5)) if rounded else r)))
         i += 1
     print("")
-    ret_df = pd.DataFrame(ret, columns=["Id", "Prediction"])
+    ret_df = pd.DataFrame(ret, columns=["Id", "ALS"])
     ret_df.set_index("Id", inplace=True)
     assert sorted(format_['Id'].values) == sorted(ret_df.index.values)
     return ret_df

@@ -1,93 +1,53 @@
 import numpy as np
 import scipy.sparse as sp
 import pickle as pkl
+from surprise import Dataset
+from surprise import Reader
+import re
+import pandas as pd
 
+def csv_to_data(file_path):
+    """Read a CSV file and change it to data usable by surprize.
 
-def compute_error(data, user_features, item_features, nz):
-    """compute the loss (MSE) of the prediction of nonzero elements."""
-    mse = 0
-    for row, col in nz:
-        item_info = item_features[:, row]
-        user_info = user_features[:, col]
-        mse += (data[row, col] - user_info.T.dot(item_info)) ** 2
-    return np.sqrt(mse / len(nz))
+    Arguments:
+        file_path {str} -- path of the file to read
 
-
-def load_data(path_dataset):
-    """Load data in text format, one rating per line."""
-    with open(path_dataset, "r") as f:
-        data = f.read().splitlines()[1:]
-    return _preprocess_data(data)
-
-
-def _preprocess_data(data):
-    """Preprocessing the text data, conversion to numerical array format."""
-    def deal_line(line):
-        pos, rating = line.split(',')
-        row, col = pos.split("_")
-        row = row.replace("r", "")
-        col = col.replace("c", "")
-        return int(row), int(col), float(rating)
-
-    def statistics(data):
-        row = set([line[0] for line in data])
-        col = set([line[1] for line in data])
-        return min(row), max(row), min(col), max(col)
-
-    # parse each line
-    data = [deal_line(line) for line in data]
-
-    # do statistics on the dataset.
-    min_row, max_row, min_col, max_col = statistics(data)
-
-    # build rating matrix.
-    ratings = sp.lil_matrix((max_row, max_col))
-    for row, col, rating in data:
-        ratings[row - 1, col - 1] = rating
-    return ratings
-
-
-def split_data(ratings, p_test=0.1):
-    """split the ratings to training data and test data.
-    Args:
-        min_num_ratings:
-            all users and items we keep must have at least min_num_ratings per user and per item.
+    Returns:
+        trainset -- data in usable format
     """
-    # set seed
-    np.random.seed(988)
+    reader = Reader(line_format='user item rating', sep=",")
+    data = Dataset.load_from_file(file_path, reader=reader)
+    trainset = data.build_full_trainset()
+    return trainset
 
-    # init
-    num_rows, num_cols = ratings.shape
-    train = sp.lil_matrix((num_rows, num_cols))
-    test = sp.lil_matrix((num_rows, num_cols))
 
-    print("the shape of original ratings. (# of row, # of col): {}".format(
-        ratings.shape))
+def pandas_to_data(df):
+    reader = Reader(rating_scale=(1, 5))
+    data = Dataset.load_from_df(df[["Row", "Col", "Prediction"]],
+                                reader=reader)
+    trainset = data.build_full_trainset()
+    return trainset
 
-    nz_items, nz_users = ratings.nonzero()
 
-    # split the data
-    set_nz_users = set(nz_users)
-    for i, user in enumerate(set_nz_users):
-        print("Splitting progression: {}%".format(
-            100*(i+1)/len(set_nz_users)), end="\r")
-        # randomly select a subset of ratings
-        row, col = ratings[:, user].nonzero()
-        selects = np.random.choice(row, size=int(len(row) * p_test))
-        residual = list(set(row) - set(selects))
+def get_ids(rid):
+    """From a raw id (rX_cY) yield user and item ids (X and Y)
 
-        # add to train set
-        for r in residual:
-            train[r, user] = ratings[r, user]
+    Arguments:
+        rid {[type]} -- [description]
 
-        # add to test set
-        for s in selects:
-            test[s, user] = ratings[s, user]
-    print("")
-    print("Total number of nonzero elements in original data:{v:,}".format(
-        v=ratings.nnz))
-    print("Total number of nonzero elements in train data:{v:,}".format(
-        v=train.nnz))
-    print(
-        "Total number of nonzero elements in test data:{v:,}".format(v=test.nnz))
-    return train, test
+    Returns:
+        [type] -- [description]
+    """
+    u, i = rid.split("_")
+    return u[1:], i[1:]
+
+
+def preprocess_df(data):
+    data.loc[:, 'Id'] = data.loc[:, 'Id'].apply(
+        lambda x: re.findall(r'\d+', str(x)))
+    # turn 'Row' and 'Col' values into features
+    data[['Row', 'Col']] = pd.DataFrame(
+        data.Id.values.tolist(), index=data.index)
+    # dropping useless features
+    data = data.drop(columns='Id')
+    return data

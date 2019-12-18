@@ -48,4 +48,5 @@ def postprocessing(classified, format_):
     # using format_ to identify the subsample of predictions we desire
     classified = classified[classified.index.isin(list(format_['Id']))].reset_index(
     ).rename(columns={'index': 'Id', 'Rating': 'KMeans'})
+    classified.set_index("Id", inplace=True)
     return classified

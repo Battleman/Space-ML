@@ -1,7 +1,5 @@
 import numpy as np
 import surprise as spr
-from surprise import Dataset
-from surprise import Reader
 import os
 import pandas as pd
 from multiprocessing import Pool
@@ -11,62 +9,9 @@ import re
 import sys
 
 try:
-    from .helpers import compute_error, split_data, load_data
+    from .helpers import pandas_to_data, get_ids, preprocess_df
 except ImportError:
-    from helpers import compute_error, split_data, load_data
-
-
-def get_all_ids(path):
-    """Read the provided path and return a list of all ids.
-
-    Arguments:
-        path {str} -- Path to the file to read
-
-    Returns:
-        list -- list of ids
-    """
-    raw_ids = []
-    with open(path) as f1:
-        for l in f1.readlines()[1:]:
-            id, _ = l.split(",")
-            raw_ids.append(id)
-    return raw_ids
-
-
-def csv_to_data(file_path):
-    """Read a CSV file and change it to data usable by surprize.
-
-    Arguments:
-        file_path {str} -- path of the file to read
-
-    Returns:
-        trainset -- data in usable format
-    """
-    reader = Reader(line_format='user item rating', sep=",")
-    data = Dataset.load_from_file(file_path, reader=reader)
-    trainset = data.build_full_trainset()
-    return trainset
-
-
-def pandas_to_data(df):
-    reader = Reader(rating_scale=(1, 5))
-    data = Dataset.load_from_df(df[["Row", "Col", "Prediction"]],
-                                reader=reader)
-    trainset = data.build_full_trainset()
-    return trainset
-
-
-def get_ids(rid):
-    """From a raw id (rX_cY) yield user and item ids (X and Y)
-
-    Arguments:
-        rid {[type]} -- [description]
-
-    Returns:
-        [type] -- [description]
-    """
-    u, i = rid.split("_")
-    return u[1:], i[1:]
+    from helpers import pandas_to_data, get_ids, preprocess_df
 
 
 def predictor(ids_chunk):
@@ -107,32 +52,29 @@ def parallelize_predictions(ids, n_cores=16):
     return res
 
 
-def create_3cols(orig_filename, name):
-    CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-    filename_3cols = CURRENT_DIR+"/cache/{}_3cols.csv".format(name)
-    with open(orig_filename) as f1:
-        with open(filename_3cols, "wt") as f2:
-            for l in f1.readlines()[1:]:
-                id, rating = l.split(",")
-                row, col = id.split("_")
-                row = row[1:]
-                col = col[1:]
-                f2.write("{},{},{}".format(row, col, rating))
-    return filename_3cols
+def main(train_df, target_df, cache_name="test", force_recompute=[]):
+    """Train multiple models on train_df and predicts target_df
 
+    Predictions are cached. If the indices don't match the indices of
+    target_df, the cache is discarded.
 
-def preprocess_df(data):
-    data.loc[:, 'Id'] = data.loc[:, 'Id'].apply(
-        lambda x: re.findall(r'\d+', str(x)))
-    # turn 'Row' and 'Col' values into features
-    data[['Row', 'Col']] = pd.DataFrame(
-        data.Id.values.tolist(), index=data.index)
-    # dropping useless features
-    data = data.drop(columns='Id')
-    return data
+    By default, if a method was already computed it is not recomputed again
+    (except if the method name is listed in force_recompute). cache_name
+    is the name to use to read and write the cache.
 
+    Arguments:
+        train_df {dataframe} -- Training dataframe
+        target_df {dataframe} -- Testing dataframe
 
-def main(train_df, target_df, cache_name="test"):
+    Keyword Arguments:
+        cache_name {str} -- Name to use for caching (default: {"test"})
+        force_recompute {list} -- Name(s) of methods to recompute, whether or
+        not it was already computed. Useful to only recompute single methods
+        without discarding the rest. (default: {[]})
+
+    Returns:
+        Dataframe -- Dataframe with predictions for each methods as columns, IDs as indices
+    """
     global algo_in_use
     CACHED_DF_FILENAME = os.path.dirname(
         os.path.abspath(__file__)) +\
@@ -146,25 +88,29 @@ def main(train_df, target_df, cache_name="test"):
         print("Retrieving cached predictions")
         all_algos_preds_df = pd.read_pickle(CACHED_DF_FILENAME)
         print("Ensuring cached IDs match given IDs")
-        assert sorted(ids_to_predict) == sorted(all_algos_preds_df.index.values)
+        assert sorted(ids_to_predict) == sorted(
+            all_algos_preds_df.index.values)
         print("Indices match, continuing")
     except (FileNotFoundError, AssertionError):
         print("No valid cached predictions found")
         all_algos_preds_df = pd.DataFrame(ids_to_predict, columns=["Id"])
         all_algos_preds_df.set_index("Id", inplace=True)
 
-    all_algos = {"SVD": spr.SVD(),
+    all_algos = {"SVD": spr.SVD(n_factors=200, n_epochs=100),
                  "Baseline": spr.BaselineOnly(),
-                 "NMF": spr.NMF(),
+                 "NMF": spr.NMF(n_factors=30, n_epochs=100),
                  "Slope One": spr.SlopeOne(),
                  "KNN Basic": spr.KNNBasic(),
                  "KNN Means": spr.KNNWithMeans(),
                  "KNN Baseline": spr.KNNBaseline(),
                  "KNN Zscore": spr.KNNWithZScore(),
-                 "SVD ++": spr.SVDpp()}
+                 "SVD ++": spr.SVDpp(),
+                 "Co Clustering": spr.CoClustering()}
 
     for name in all_algos:
         print("##### {} ####".format(name))
+        if name in force_recompute and name in all_algos_preds_df.columns:
+            all_algos_preds_df.drop(name, axis=1, inplace=True)
         if name in all_algos_preds_df.columns:
             print("Already computed {}, skipping".format(name))
             continue
@@ -179,7 +125,7 @@ def main(train_df, target_df, cache_name="test"):
         this_algo_preds_df = pd.DataFrame(predictions, columns=["Id", name])
         this_algo_preds_df.set_index("Id", inplace=True)
         all_algos_preds_df = pd.merge(all_algos_preds_df, this_algo_preds_df,
-                              left_index=True, right_index=True)
+                                      left_index=True, right_index=True)
         all_algos_preds_df.to_pickle(CACHED_DF_FILENAME)
     print("DONE computing surprize")
     return all_algos_preds_df

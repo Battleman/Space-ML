@@ -87,6 +87,4 @@ def predict(model, format_):
     format_ = format_.set_index("Id")
     # Safety check
     format_ = format_.replace(6, 5)
-    format_.columns = ["Id", "NN"]
-    format_.set_index("Id", inplace=True)
     return format_

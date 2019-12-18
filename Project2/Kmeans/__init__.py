@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-from .processing import postprocessing, preprocessing
-from .helpers import cluster_agg, kmeans
+try:
+    from processing import postprocessing, preprocessing
+    from helpers import cluster_agg, kmeans
+except ImportError:
+    from .processing import postprocessing, preprocessing
+    from .helpers import cluster_agg, kmeans
 import pandas as pd
-import numpy as np
 
 
 def main(input_, format_, k, rounded=True):
@@ -20,6 +23,7 @@ def main(input_, format_, k, rounded=True):
 
     """
     # useful constants
+    max_iters = 100
     threshold = 1e-6
     # preprocessing
     data = preprocessing(input_)
@@ -27,10 +31,10 @@ def main(input_, format_, k, rounded=True):
     print('Kmeans for k=', k, ':')
     assignments, mu, _ = kmeans(data, k, max_iters, threshold)
     # generating a prediction using the cluster of similar users
-    data = cluster_agg(assignments, mu, k, data)
+    data = cluster_agg(assignments, mu, k, data, rounded=rounded)
     # postprocessing
     data = postprocessing(data, format_)
-    # preprocessing
+    return data
 
 
 if __name__ == "__main__":
