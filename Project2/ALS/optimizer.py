@@ -31,7 +31,7 @@ def optimizer_lambdas(min_num_costs, train, test, close_to_best=False, num_featu
     while len(costs) < min_num_costs:
         print("Not enough samples ({}/{}), computing..."
               .format(len(costs), min_num_costs))
-        best_params = (0,0)
+        best_param = (0,0)
         if len(costs) > 0:
             best_param = min(costs, key=lambda x: costs[x])
 
