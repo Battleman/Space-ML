@@ -1,15 +1,9 @@
 # -*- coding: utf-8 -*-
-import pandas as pd
-import numpy as np
-
 from sklearn.model_selection import train_test_split
-
-import keras
-from keras.models import Model
 
 
 def preprocessing(data):
-    """ Preprocesses the data used for the NN training.
+    """ Preprocesse the data used for the NN training.
 
     This also splits the data into a training set and a testing set
     to perform a cross validation during the NN training.
@@ -44,7 +38,7 @@ def preprocessing(data):
 
 
 def get_uniquevalues(data):
-    """ Calculates the number of unique users and movies in the dataset
+    """ Calculate the number of unique users and movies in the dataset
 
     Args:
         data: Dataframe of original data transformed into 2 user/movie columns
@@ -57,7 +51,7 @@ def get_uniquevalues(data):
 
 
 def predict(model, format_):
-    """Returns predictions of the trained NN model.
+    """Return predictions of the trained NN model.
 
     Runs the trained NN `model` on the data given to predict and
     finally output the ratings predictions.
@@ -94,5 +88,6 @@ def predict(model, format_):
     format_ = format_.reindex(columns=columnsTitles)
     # Safety check
     format_ = format_.replace(6, 5)
-
+    format_.columns = ["Id", "NN"]
+    format_.set_index("Id", inplace=True)
     return format_
