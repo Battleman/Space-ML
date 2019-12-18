@@ -84,7 +84,7 @@ def kmeans(data, k, max_iters, threshold):
     return assignments, mu, average_loss
 
 
-def cluster_agg(assignments, mu, k, data):
+def cluster_agg(assignments, mu, k, data, rounded):
     """Generates a prediction by replacing the unknown ratings by the corresponding cluster rating.
        More precisely, if user i has for cluster j, it's unknown ratings are replaced by the ones of the corresponding
        cluster core.
@@ -94,12 +94,13 @@ def cluster_agg(assignments, mu, k, data):
         mu: The list of clusters cores
         k: The amount of clusters
         data: The incomplete rating matrix
+        rounded: Whether to round the predictions or not
 
     Returns:
         np.array: The predicted rating matrix
     """
     # Rounding the cluster values to get valid ratings
-    mu_rounded = np.round(mu)
+    mu_rounded = np.round(mu) if rounded else mu
     # Computing the resulting rating matrix
     prediction = data.copy()
     for j in range(k):

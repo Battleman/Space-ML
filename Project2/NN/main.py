@@ -3,17 +3,18 @@ import os
 
 try:
     from .processing import preprocessing, predict
-    from .NNmodel import RecommenderNet
+    from .NNmodel import *
 except (ModuleNotFoundError, ImportError):
     from processing import preprocessing, predict
-    from NNmodel import RecommenderNet
+    from NNmodel import *
 
 
 def main(input_, format_):
     """Predicts the Netflix ratings using a Neural Network model
 
     More precisely, it preprocesses the data to make it compatible with the
-    NN model then finally postprocesses the result to give predictions the desired format.
+    NN model which is then trained and finally postprocesses the result
+    to give predictions the desired format.
 
     Args:
         input_: The samples
@@ -23,16 +24,16 @@ def main(input_, format_):
         np.array: The predictions of the ratings
     """
     # preprocessing
-    X_train_array, y_train, X_test_array, y_test, n_users, n_movies = preprocessing(input_)
+    X_all, y, n_users, n_movies = preprocessing(input_)
 
     # Build the NN model and train it
     n_factors = 4
-    model = RecommenderNet(n_users + 1, n_movies + 1, n_factors)
-    history = model.fit(x=X_train_array, y=y_train, batch_size=128, epochs=10,
-                        verbose=1, validation_data=(X_test_array, y_test))
+    model = NN_model(n_users + 1, n_movies + 1, n_factors)
+    history = model.fit(x=X_all, y=y, batch_size=128, epochs=10,
+                        verbose=1)
 
     # generating the predictions
-    print("Generating predictions")
+    print("Generating predictions ...")
     predictions = predict(model, format_)
 
     return predictions

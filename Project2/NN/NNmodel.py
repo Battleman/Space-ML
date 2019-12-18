@@ -22,7 +22,7 @@ def root_mean_squared_error(y_true, y_pred):
     """
     return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
-def RecommenderNet(n_users, n_movies, n_factors):
+def NN_model(n_users, n_movies, n_factors):
     """Builds a Neural Network model using the Keras library
 
     Args:
