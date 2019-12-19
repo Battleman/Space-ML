@@ -23,7 +23,7 @@ def root_mean_squared_error(y_true, y_pred):
     return K.sqrt(K.mean(K.square(y_pred - y_true)))
 
 def NN_model(n_users, n_movies, n_factors):
-    """Builds a Neural Network model using the Keras library
+    """Builds a Neural Network model using the Keras library. 
 
     Args:
         n_users: number of unique users in the dataset
@@ -31,31 +31,38 @@ def NN_model(n_users, n_movies, n_factors):
         n_factors: number of embeddings (size of the vectors) representing users/movies in the NN model
 
     """
+    #Build embeddings for users
     user = Input(shape=(1,))
-    u = Embedding(n_users, n_factors)(user)
-    u = Flatten()(u)
-    u = Dropout(0.02)(u)
-
+    u_embeddings = Embedding(n_users, n_factors)(user)
+    u_embeddings = Flatten()(u_embeddings)
+    #Dropout to reduce overfitting
+    u_embeddings = Dropout(0.02)(u_embeddings)
+    
+    #Build embeddings for movies
     movie = Input(shape=(1,))
-    m = Embedding(n_movies, n_factors)(movie)
-    m = Flatten()(m)
-    m = Dropout(0.02)(m)
+    m_embeddings = Embedding(n_movies, n_factors)(movie)
+    m_embeddings = Flatten()(m_embeddings)
+    #Dropout to reduce overfitting
+    m_embeddings = Dropout(0.02)(m_embeddings)
 
-    x = keras.layers.concatenate([m, u], axis=1)
+    merge = keras.layers.concatenate([m_embeddings, u_embeddings], axis=1)
+    #Dropout to reduce overfitting
+    merge = Dropout(0.03)(merge)
+    
+    #Fully connected layer of 100 neurons
+    dense_layer1 = Dense(100, kernel_initializer='he_normal')(merge)
+    dense_layer1 = Activation('relu')(dense_layer1)
 
-    x = Dropout(0.03)(x)
+    #Fully connected layer of 50 neurons
+    dense_layer2 = Dense(50, kernel_initializer='he_normal')(dense_layer1)
+    dense_layer2 = Activation('relu')(dense_layer2)
+    
+    #Fully connected layer of 10 neurons
+    dense_layer3 = Dense(10, kernel_initializer='he_normal')(dense_layer2)
+    dense_layer3 = Activation('relu')(dense_layer3)
 
-    x = Dense(100, kernel_initializer='he_normal')(x)
-    x = Activation('relu')(x)
-
-    x = Dense(50, kernel_initializer='he_normal')(x)
-    x = Activation('relu')(x)
-
-    x = Dense(10, kernel_initializer='he_normal')(x)
-    x = Activation('relu')(x)
-
-    x = Dense(1, activation='relu', name='Activation')(x)
-    model = Model(inputs=[user, movie], outputs=x)
+    out = Dense(1, activation='relu', name='Activation')(dense_layer3)
+    model = Model(inputs=[user, movie], outputs=out)
     opt = Adam(lr=0.001)
     model.compile(loss=root_mean_squared_error, optimizer=opt)
     return model
