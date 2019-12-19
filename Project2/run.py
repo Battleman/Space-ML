@@ -43,8 +43,8 @@ print("Loading datasets")
 try:
     input_ = pd.read_csv(training_path)
     format_ = pd.read_csv(format_path)
-    with open('rr.pkl','rb') as f:
-        rr=pkl.load(f)
+    with open('ridge_coefs.pkl','rb') as f:
+        ridge_coefs=pkl.load(f)
 except FileNotFoundError as e:
     print("Impossible to load training, format or hyperparameter files, "
           "please double check")
@@ -76,8 +76,9 @@ del predictions_nn_final
 concat_aug_final, _ = augmentation(concat_final)
 del concat_final
 #applying ridge regression to the prediction matrix to get the final prediction
-concat_aug_final["Prediction"] = rr.intercept_
-predictor_coefficients=rr.coef_
+#Optimal hyperparameter obtained through cross-validation
+concat_aug_final["Prediction"] = 1.1945456804726544
+predictor_coefficients=ridge_coefs
 for i in range(len(concat_aug_final)):
     if col != "Prediction":
         concat_aug_final["Prediction"] += concat_aug_final.loc[:, i]*predictor_coefficients[i]
