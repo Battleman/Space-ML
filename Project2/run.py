@@ -82,7 +82,7 @@ del concat_final
 # Optimal hyperparameter obtained through cross-validation
 concat_aug_final["Prediction"] = 1.1945456804726544
 predictor_coefficients = ridge_coefs
-for i in range(len(concat_aug_final)-1):
+for i in range(concat_aug_final.shape[1]-1):
     concat_aug_final["Prediction"] += concat_aug_final.iloc[:, i] *\
             predictor_coefficients[i]
 concat_aug_final["Prediction"] = concat_aug_final["Prediction"].apply(
