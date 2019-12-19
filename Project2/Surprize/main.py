@@ -100,11 +100,11 @@ def main(train_df, target_df, cache_name="test", force_recompute=[]):
                  "Baseline": spr.BaselineOnly(),
                  "NMF": spr.NMF(n_factors=30, n_epochs=100),
                  "Slope One": spr.SlopeOne(),
-                 "KNN Basic": spr.KNNBasic(),
-                 "KNN Means": spr.KNNWithMeans(),
+                 "KNN Basic": spr.KNNBasic(k=60),
+                 "KNN Means": spr.KNNWithMeans(k=60),
                  "KNN Baseline": spr.KNNBaseline(),
-                 "KNN Zscore": spr.KNNWithZScore(),
-                 "SVD ++": spr.SVDpp(),
+                 "KNN Zscore": spr.KNNWithZScore(k=60),
+                 "SVD ++": spr.SVDpp(n_factors=40, n_epochs=100),
                  "Co Clustering": spr.CoClustering()}
 
     for name in all_algos:
