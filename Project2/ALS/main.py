@@ -45,7 +45,8 @@ def main(input_, format_, rounded=False, num_features=40, cache_name="test"):
 
     # try to retrieve best matrix factorization
     print("Trying to retrieve cached optimal matrix factorization")
-    factorized_filename = CURRENT_DIR+"/cache/factorized_{}.pkl".format(cache_name)
+    factorized_filename = CURRENT_DIR +\
+        "/cache/factorized_{}.pkl".format(cache_name)
     try:
         with open(factorized_filename, "rb") as f:
             print("Successfully retrieved cached optimal matrix factorization")
@@ -76,7 +77,8 @@ def main(input_, format_, rounded=False, num_features=40, cache_name="test"):
     i = 1
     for row, col in nnz_final:
         if i % 100 == 0 or i == len(nnz_final):
-            print("Emitting predictions {}/{}".format(i, len(nnz_final)), end="\r")
+            print("Emitting predictions {}/{}".format(i, len(nnz_final)),
+                  end="\r")
             sys.stdout.flush()
         item_info = ifeats[:, row]
         user_info = ufeats[:, col]
