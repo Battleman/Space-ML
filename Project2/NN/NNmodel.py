@@ -49,19 +49,15 @@ def NN_model(n_users, n_movies, n_factors):
     #Dropout to reduce overfitting
     merge = Dropout(0.03)(merge)
     
-    #Fully connected layer of 100 neurons
-    dense_layer1 = Dense(100, kernel_initializer='he_normal')(merge)
+    #Fully connected layer of 60 neurons
+    dense_layer1 = Dense(60, kernel_initializer='he_normal')(merge)
     dense_layer1 = Activation('relu')(dense_layer1)
-
-    #Fully connected layer of 50 neurons
-    dense_layer2 = Dense(50, kernel_initializer='he_normal')(dense_layer1)
-    dense_layer2 = Activation('relu')(dense_layer2)
     
     #Fully connected layer of 10 neurons
-    dense_layer3 = Dense(10, kernel_initializer='he_normal')(dense_layer2)
-    dense_layer3 = Activation('relu')(dense_layer3)
+    dense_layer2 = Dense(10, kernel_initializer='he_normal')(dense_layer1)
+    dense_layer2 = Activation('relu')(dense_layer2)
 
-    out = Dense(1, activation='relu', name='Activation')(dense_layer3)
+    out = Dense(1, activation='relu', name='Activation')(dense_layer2)
     model = Model(inputs=[user, movie], outputs=out)
     opt = Adam(lr=0.001)
     model.compile(loss=root_mean_squared_error, optimizer=opt)
