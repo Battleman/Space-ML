@@ -8,7 +8,7 @@ except ImportError:
 import pandas as pd
 
 
-def main(input_, format_, k, rounded=True):
+def main(input_, format_, k=6, rounded=True):
     """Predicts the Netflix ratings using a modified version of Kmeans
 
     More precisely, it preprocesses the data to make it compatible with kmeans,
