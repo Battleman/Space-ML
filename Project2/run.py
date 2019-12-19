@@ -81,7 +81,7 @@ concat_aug_final["Prediction"] = 1.1945456804726544
 predictor_coefficients=ridge_coefs
 for i in range(len(concat_aug_final)):
     if col != "Prediction":
-        concat_aug_final["Prediction"] += concat_aug_final.loc[:, i]*predictor_coefficients[i]
+        concat_aug_final["Prediction"] += concat_aug_final.loc[:, i]*predictor_coefficients.get(i,0)
 concat_aug_final["Prediction"] = concat_aug_final["Prediction"].apply(lambda x: int(np.clip(np.round(x),1,5)))
 concat_aug_final.index.name = "Id"
 #saving the final prediction
