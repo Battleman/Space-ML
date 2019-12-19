@@ -77,10 +77,10 @@ def predict(model, format_):
     # Predict the ratings using the trained NN
     predictions = model.predict(X_pred)
     # round predictions
-    rounded = [x[0] for x in predictions]
+    preds_nn = [x[0] for x in predictions]
 
     # Transform the data into the desired format
-    format_['NN_Predictions'] = rounded
+    format_['NN_Predictions'] = preds_nn
     format_['Id'] = 'r' + format_['userId'].astype('str') + '_c' + format_[
         'movieId'].astype('str')
     format_.drop(columns=["userId", "movieId"], inplace=True)
