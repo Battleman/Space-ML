@@ -3,10 +3,7 @@ import surprise as spr
 import os
 import pandas as pd
 from multiprocessing import Pool
-from multiprocessing.dummy import Pool as ThreadPool
 import time
-import re
-import sys
 
 try:
     from .helpers import pandas_to_data, get_ids, preprocess_df
@@ -73,7 +70,8 @@ def main(train_df, target_df, cache_name="test", force_recompute=[]):
         without discarding the rest. (default: {[]})
 
     Returns:
-        Dataframe -- Dataframe with predictions for each methods as columns, IDs as indices
+        Dataframe -- Dataframe with predictions for each methods as columns,
+        IDs as indices
     """
     global algo_in_use
     CACHED_DF_FILENAME = os.path.dirname(

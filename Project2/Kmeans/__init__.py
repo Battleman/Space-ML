@@ -13,7 +13,8 @@ def main(input_, format_, k=6, rounded=True):
 
     More precisely, it preprocesses the data to make it compatible with kmeans,
     applies Kmeans (a version that ignores nans) with k clusters to it
-    then finally postprocesses the result to give predictions the desired format.
+    then finally postprocesses the result to give predictions the desired
+    format.
 
     Args:
         input_: The samples

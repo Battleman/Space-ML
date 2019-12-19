@@ -14,14 +14,13 @@ def initialize_clusters(data, k):
         np.array: An array of shape (k, num_feature)
     """
     np.random.seed(1)
-    random = np.random.rand(k, data.shape[1])
     min_data = np.nanmin(data, axis=0)
     max_data = np.nanmax(data, axis=0)
     return np.random.uniform(min_data, max_data, (k, data.shape[1]))
 
 
 def build_distance_matrix(data, mu):
-    """Builds a distance matrix.
+    """Build a distance matrix.
 
     Rerurns:
         np.array: The distance matrix:
@@ -32,7 +31,7 @@ def build_distance_matrix(data, mu):
 
 
 def update_kmeans_parameters(data, mu_old):
-    """Updates the parameter of kmeans.
+    """Update the parameter of kmeans.
 
     Returns:
         np.array: Loss of each data point with shape (num_samples, 1)
@@ -49,7 +48,7 @@ def update_kmeans_parameters(data, mu_old):
 
 
 def kmeans(data, k, max_iters, threshold):
-    """Runs the Kmeans algorithm.
+    """Run the Kmeans algorithm.
 
     Args:
         data: The samples
@@ -62,21 +61,22 @@ def kmeans(data, k, max_iters, threshold):
         np.array: List of all the k kernels
         np.array: Total loss of the current configuration
     """
-    output_figure = "kmeans_figures/"
     # initialize the cluster.
     mu_old = initialize_clusters(data, k)
     average_loss = 0
     # start the kmeans algorithm.
-    for iter in range(max_iters):
+    for iteration in range(max_iters):
         # update z and mu
         losses, assignments, mu = update_kmeans_parameters(data, mu_old)
         # calculate the average loss over all points
         old_avg_loss = average_loss
         average_loss = np.mean(losses)
-        print("The current iteration of k-means is: {i}, the average loss is {l}.".format(
-            i=iter, l=average_loss), end='\r')
+        print("The current iteration of k-means is: "
+              "{i}, the average loss is {loss}.".format(i=iteration,
+                                                        loss=average_loss),
+              end='\r')
         # check converge
-        if iter > 0 and np.abs(average_loss - old_avg_loss) < threshold:
+        if iteration > 0 and np.abs(average_loss - old_avg_loss) < threshold:
             print('')
             break
         # update k-means information.
@@ -85,12 +85,16 @@ def kmeans(data, k, max_iters, threshold):
 
 
 def cluster_agg(assignments, mu, k, data, rounded):
-    """Generates a prediction by replacing the unknown ratings by the corresponding cluster rating.
-       More precisely, if user i has for cluster j, it's unknown ratings are replaced by the ones of the corresponding
-       cluster core.
+    """Generate a prediction.
+
+    Generate a prediction by replacing the unknown ratings by the
+    corresponding cluster rating.
+    More precisely, if user i has for cluster j, it's unknown ratings are
+    replaced by the ones of the corresponding
+    cluster core.
 
     Args:
-        assignments: At index i, the index of the cluster corresponding to user i
+        assignments: At index i, the index of the cluster of user i
         mu: The list of clusters cores
         k: The amount of clusters
         data: The incomplete rating matrix
@@ -104,6 +108,8 @@ def cluster_agg(assignments, mu, k, data, rounded):
     # Computing the resulting rating matrix
     prediction = data.copy()
     for j in range(k):
-        prediction[assignments == j] = np.where(np.isnan(
-            prediction[assignments == j]), mu_rounded[j], prediction[assignments == j])
+        prediction[assignments == j] = np.where(
+            np.isnan(prediction[assignments == j]),
+            mu_rounded[j],
+            prediction[assignments == j])
     return prediction

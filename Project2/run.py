@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import pandas as pd
-from scipy import stats
 import sklearn
-import matplotlib.pyplot as plt
 from sklearn.linear_model import RidgeCV
 from sklearn.preprocessing import PolynomialFeatures
 import pickle as pkl
@@ -15,12 +13,14 @@ import Surprize
 
 
 def augmentation(concat):
-    '''Splits concat into X and y (if y is contained in it) and then applies a polynomial 3 feature augmentation to X
+    """Splits concat into X and y (if y is contained in it) and then applies a
+    polynomial 3 feature augmentation to X
     Args:
         concat: The concatenation of X and y (or just X)
     Returns:
-        (pandas.DataFrame,pandas.DataFrame): X augmented and y (None if there's no y)
-    '''
+        (pandas.DataFrame,pandas.DataFrame): X augmented and y
+        (None if there's no y)
+    """
     poly = PolynomialFeatures(3)
     X = concat.loc[:, ~(concat.columns == "y")]
     print("Augmenting {} columns".format(len(X.columns)))
@@ -78,7 +78,7 @@ del predictions_nn_final
 # applying a feature augmentation to our prediction matrix
 concat_aug_final, _ = augmentation(concat_final)
 del concat_final
-# applying ridge regression to the prediction matrix to get the final prediction
+# applying ridge regression to the prediction matrix to get the final predict
 # Optimal hyperparameter obtained through cross-validation
 concat_aug_final["Prediction"] = 1.1945456804726544
 predictor_coefficients = ridge_coefs
